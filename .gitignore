@@ -1,0 +1,23 @@
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS metadata
+.DS_Store
+
+# Data outputs (large files; keep raw source data out of git)
+*.parquet
+*.csv
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Credentials / secrets — never commit these
+.env
+.env.*
+!.env.example
+*.key
