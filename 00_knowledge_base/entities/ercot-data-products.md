@@ -14,8 +14,6 @@ Reference for the ERCOT datasets feeding this project and where they come from.
 
 | Product | What | Report / source | Granularity | Extraction code |
 |---|---|---|---|---|
-| DAM price | Day-ahead SPP | report **13060** archive (bulk zip) | hourly, by LZ | (to migrate) |
-| RTM price | Real-time SCED SPP | report **13061** archive (bulk zip) | hourly, by LZ | (to migrate) |
 | Wind production | WPP by geography | live API | hourly, by weather zone | `ercot_wpp_by_geo.py`, `ercot_wpp_archive.py` |
 | Solar production | Solar PP by geography (NP4-745-CD) | live API | hourly | `ercot_spp_by_geo.py` |
 | Actual load | By forecast zone | **NP6-346-CD** archive (2021–Nov 2023) + live API (Dec 2023–) | by FZN | `ercot_load_by_fzn.py`, `ercot_load_archive.py` |

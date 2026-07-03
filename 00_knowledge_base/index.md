@@ -11,8 +11,7 @@ Update on every ingest.
 
 ## Start here
 - [[00_overview]] — research question, evolving thesis, open questions.
-- [[scope-and-history]] — how the topic narrowed from ERCOT-vs-PJM to ERCOT-only.
-- [[repo-migration-map]] — how the old repo maps into this one.
+- [[scope-and-history]] — how the topic narrowed from ERCOT-vs-PJM to ERCOT-only, and why (PJM capacity-price surge pushing investors toward energy-only markets).
 
 ## Entities
 - [[ercot]] — the ISO and its market design.
@@ -49,12 +48,17 @@ Update on every ingest.
 ## Methods
 - [[feature-engineering]] — adder demand, CDD/HDD, capacity factor, net load.
 - [[notebook-catalog]] — architecture of the 16 kept notebooks (I/O, patterns) + template.
-- [[repo-migration-map]] — old→new repo mapping.
+  Also tracks 3 open gaps: no WPP EDA, no RTM-vs-DAM comparison, no node→zone cleaning
+  notebook (all dropped, not renamed, during the old→new repo migration). Every entry now
+  carries a `Last run` execution stamp (2026-07-03). All previously-broken notebooks fixed as
+  of 2026-07-03 except `00_emil_api_check` (blocked on missing `.env` credentials, not a code bug).
 
 ## Sources
 - [[sources/2026-06-30_ercot-market-concepts]] — pricing mechanics (ORDC/ASDC, LMP/SPP, ancillary).
 - [[sources/2026-06-30_data-and-eda-notes]] — data sources, mappings, features, EDA findings.
 - [[sources/2026-06-30_ercot-data-extraction-skill]] — extraction playbook + pitfalls (from old repo).
+- [[sources/2026-07-01_research-meeting]] — advisor meeting: net-load direction, seasonality, deliverables.
+- [[sources/2026-07-01_kickoff-project-tracker]] — PM kickoff: Notion ↔ repo bridge via `Related Area`.
 
 ## Analysis (filed findings)
 _None yet. Use `analysis/_TEMPLATE.md` when filing a reusable query result._

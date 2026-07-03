@@ -25,9 +25,10 @@ exposed to RTM (could be 0% — pure RT-market risk). RTM–DAM spread is itself
 signal.
 
 ## Use in this project
-- RTM price EDA: legacy `01_ercot_RTM_price_eda`. RTM vs DAM: `04_ercot_rtm_dam_price_eda`.
-- **Data:** DAM = report **13060**, RTM = report **13061** (SPP by load zone). Legacy nodal
-  pulls used NP6-788-CD — see [[ercot-data-products]].
+- **Data:** DAM = report **13060**, RTM = report **13061** (SPP by load zone). Superseded
+  nodal pulls used NP6-788-CD — see [[ercot-data-products]].
+- ⚠️ **Gap:** the new repo has no RTM-vs-DAM comparison notebook (old `04_rtm_dam_price_eda`
+  was dropped in migration, not renamed) — rebuild if that comparison is needed.
 
 ## Related
 - [[price-volatility]] · [[lmp-spp]] · [[ordc-price-adders]] · [[load-zones]] · [[ercot]]

@@ -14,9 +14,12 @@ ERCOT prices are spatial. Key geographies:
 - **Forecast Zones (FZN)** — geography for load forecasting.
 - **Nodes** — granular LMP points (congestion shows up here).
 
-Node→zone mapping is a real ETL step in this project (legacy `data/mapping`,
-notebook `03_ercot_LZ_price_cleaning`). Getting the mapping right is a prerequisite for
-clean zonal price/volatility series.
+Node→zone mapping is a real ETL step in this project (reference files under
+`01_data/1.3_raw_other/mapping/`). Getting the mapping right is a prerequisite for clean
+zonal price/volatility series.
+
+⚠️ **Gap:** the new repo has no node→zone cleaning notebook — old `03_LZ_price_cleaning` was
+dropped during migration, not renamed/kept. Rebuild if a fresh mapping-cleaning step is needed.
 
 ## Spatial price patterns
 - **North LZ:** high price mean & variance (congestion + high demand).

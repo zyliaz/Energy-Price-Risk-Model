@@ -24,11 +24,12 @@ weather → [[load-and-demand]] → reserves → [[ordc-price-adders]] → [[pri
 - **CDD is population-driven**; **HDD is population-growth + heatwave driven**. As heating
   electrifies, HDD's load impact is rising.
 
-## Legacy work
-- HDD EDA: `11_[IN PROGRESS]_HDD_eda`.
+## Findings
+- **(2026-07-01)** Total load vs temperature shows an **upward quadratic trend over the
+  years** — total load is rising (HDD EDA). See [[load-and-demand]].
 
 ## Related
 - [[load-and-demand]] · [[price-volatility]] · [[feature-engineering]] · [[load-zones]]
 
 ## Sources
-- [[sources/2026-06-30_data-and-eda-notes]]
+- [[sources/2026-06-30_data-and-eda-notes]] · [[sources/2026-07-01_research-meeting]]

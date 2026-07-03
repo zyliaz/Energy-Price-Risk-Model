@@ -4,7 +4,7 @@ type: concept
 tags: [scarcity, pricing, ercot, core]
 status: developing
 sources: 2
-updated: 2026-06-30
+updated: 2026-07-03
 ---
 
 # ORDC Price Adders
@@ -32,6 +32,14 @@ tight-reserve moments (often **low [[wind-power-production|wind]] + high
 - **2014 – Nov 2025:** `RTRSVPOR`, `RTRSVPOFF`, `RTRDP`.
 - **Dec 2025+:** `RTRDPA`, `RTRDPRU`, `RTRDPRD`, `RTRDPRRS`, `RTRDPECRS`, `RTRDPNS` — see
   [[rtc-b-asdc]].
+- **Exact cutover (measured from raw 15-min data, `01_data/1.2_raw_api/
+  rtm_price_adders_15min_20200101_20251231.parquet`, 2026-07-03):** old-schema fields
+  (`RTRSVPOR`/`RTRSVPOFF`/`RTRDP`) last carry a nonzero value at **2025-12-04 20:45:00**;
+  new-schema fields (`RTRDPA`/etc.) first carry a nonzero value at **2025-12-05 00:00:00**.
+  This is the exact **RTC+B go-live boundary** the codebase splits pre/post datasets on
+  (e.g. `04_price_adder_rtm_load_correlation` filters `datetime <= '2025-12-04'` vs
+  `>= '2025-12-05'`) — treat 2025-12-05 00:00 as the hard schema-change timestamp, and never
+  merge pre/post dataframes across it without re-deriving a common adder definition.
 
 ## Empirical findings so far
 - Adder **activation (Boolean) by RTM price quantile** steepens sharply at higher quantiles;
@@ -40,10 +48,6 @@ tight-reserve moments (often **low [[wind-power-production|wind]] + high
   tail is tilted by **Winter Storm Uri (Feb 2021)**.
 - **PA > SPP cases:** PA can exceed SPP when local LMP < 0 (reliability-deployment
   suppression, or regional wind) — open hypothesis, validate with nodal LMP. See [[lmp-spp]].
-
-## Legacy work to migrate
-Parsing `src/transformation/parse_rtm_price_adders*.py`; notebooks `08_*` (pre-2025) and
-`09_*` (new PA); load correlation `10_*`; open `10.1_[PENDING]_investigate_abnormal_PA`.
 
 ## Related
 - [[rtc-b-asdc]] · [[lmp-spp]] · [[ancillary-services]] · [[price-volatility]] · [[energy-only-market]] · [[puct]]

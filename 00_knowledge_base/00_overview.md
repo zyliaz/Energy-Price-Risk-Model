@@ -3,7 +3,7 @@ title: Overview & Thesis — Drivers of ERCOT Price Volatility
 type: overview
 tags: [ercot, price-volatility, thesis]
 status: developing
-updated: 2026-06-30
+updated: 2026-07-03
 ---
 
 # Drivers of ERCOT Price Volatility
@@ -36,8 +36,23 @@ extreme events (Feb 2021 Uri), so tail risk is concentrated in scarcity/extreme 
 
 > ⚠️ Starting hypothesis, not a conclusion. Update as `03_notebooks/02_analysis` produces
 > results, and log every revision.
+
+> ✅ Resolved 2026-07-03: both halves of the "adder activation rises sharply in top price
+> quantiles" evidence are now reproducible. [[notebook-catalog|02_price_adder_activation]]
+> (pre-2025) had a deleted/broken data-load chain, fixed and re-verified by fresh execution;
+> [[notebook-catalog|03_new_pa_activation]] (post-2025) was already clean. The Uri
+> natural-gas-correlation caveat is likewise resolved — see [[natural-gas-prices]].
 > ⚠️ **Regime break Dec 2025:** ORDC adders → co-optimized [[rtc-b-asdc|RTC+B/ASDC]].
 > Analyze pre/post-Dec-2025 as separate regimes (price formation + data schema both change).
+
+## Direction (2026-07-01 advisor meeting)
+- **Stats model first**, aimed at **scenario identification**.
+- Preferred modeling target is **net load = load − wind − solar** (add a renewable-generation
+  pipeline), not raw load. See [[feature-engineering]], [[wind-power-production]].
+- Seasonal structure matters: `log(price)` vs load correlates more strongly in **summer**
+  (use monthly slices). See [[load-and-demand]].
+- **Deliverable:** academic paper / white paper + conference poster + git repo.
+- Source: [[sources/2026-07-01_research-meeting]].
 
 ## Scope
 ERCOT-only. Earlier framing compared ERCOT (energy-only) to PJM (capacity market); that
@@ -49,13 +64,14 @@ note for why the topic narrowed.
 - **EDA** → `03_notebooks/01_eda` (price, load, WPP, NG correlation, HDD).
 - **Analysis** → `03_notebooks/02_analysis` (adder activation, load–price correlation).
 
-See [[repo-migration-map]] for how legacy work moves into this structure.
-
 ## Open questions
 - What share of RTM price variance is attributable to ORDC adders vs. fundamentals?
 - How does wind forecast error translate into price spikes?
-- Are price-adder dynamics changing post-2025 (new PA regime)? (cf. legacy `09_new_PA_*`)
+- Are price-adder dynamics changing post-2025 (new PA regime)?
 - Does data-center load growth measurably raise baseline volatility yet?
+- Does **net load** (load − wind − solar) model price better than raw load? (2026-07-01)
+- Why does load-forecast **over-prediction coincide with high prices**? (seems backwards)
+- How much stronger is the load–price relationship in **summer** vs other seasons?
 
 ## Related
 - [[price-volatility]] · [[ordc-price-adders]] · [[rtc-b-asdc]] · [[lmp-spp]] · [[rtm-dam]]

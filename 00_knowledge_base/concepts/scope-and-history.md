@@ -15,6 +15,9 @@ This project's framing has evolved.
   `RESEARCH-PJM-ERCOT-Price-Volatility`.)
 - **Current (2026-06):** narrowed to **ERCOT-only**, focused on *decomposing the drivers*
   of price volatility (load, wind, gas, weather, ORDC adders). PJM is background context.
+  (Motivating hook, not a research claim: rising PJM capacity prices are pushing investor
+  interest toward energy-only markets like ERCOT — unverified, included only as framing for
+  why this topic, not for the analysis itself.)
 
 ## Why it matters for the wiki
 - Do **not** create new PJM-primary pages unless scope re-expands.

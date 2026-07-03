@@ -18,7 +18,7 @@ consistent.
 | **CDD** | actual temp − 65°F (cooling threshold) | Dominant in Texas (cooling load). See [[weather-hdd-cdd]]. |
 | **HDD** | 65°F − actual temp (heating threshold) | Smaller in TX; rising as heating electrifies. |
 | **Capacity factor (C.F.)** | wind/solar production ÷ capacity | From production series. See [[wind-power-production]]. |
-| **Net load** | load − (wind + solar) | Core driver of reserve tightness / adders. |
+| **Net load** | load − (wind + solar) | **Preferred modeling target (2026-07-01)** — expected to model price better than raw load. Needs a solar+wind pipeline. |
 
 ## Open / to-add
 - Price-volatility target definition (see [[price-volatility]]) — rolling std, spike flags.
@@ -26,3 +26,6 @@ consistent.
 
 ## Related
 - [[load-and-demand]] · [[weather-hdd-cdd]] · [[wind-power-production]] · [[price-volatility]]
+
+## Sources
+- [[sources/2026-07-01_research-meeting]]

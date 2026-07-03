@@ -23,19 +23,23 @@ Solar production is a parallel live-API stream ("Solar PP by geography"), hourly
 solar together define **net load**. Both convert to **capacity factor** as features
 (see [[feature-engineering]]).
 
+> **Priority (2026-07-01):** build the **solar + wind generation pipeline** so modeling can
+> use **net load = load − wind − solar** (expected to model price better than raw load).
+> See [[sources/2026-07-01_research-meeting]], [[extraction-scripts]].
+
 ## Data & mapping
 - Wind/solar production: live API, hourly, by **weather zone**.
 - Region → county mapping: ERCOT "Wind and Solar Regions to County Mapping.xlsx" (2024-05).
   See [[load-zones]].
 - **Action item:** run full wind & solar extraction (resolve timeout issue).
 
-## Legacy work
-- EDA: `05_ercot_wpp_eda`.
-- Extraction: `src/extraction/ercot_wpp_by_geo.py`, `ercot_wpp_archive.py`
-  (jobs `wpp_spp_geo_apr18`, `wpp_archive_apr21`).
+## Open gap
+⚠️ The new repo has **no WPP EDA notebook** — old `05_wpp_eda` was dropped during migration,
+not renamed/kept. Extraction scripts (`ercot_wpp_by_geo.py`, `ercot_wpp_archive.py`) exist
+and run; the EDA/distribution step needs to be rebuilt. See [[extraction-scripts]].
 
 ## Related
 - [[load-and-demand]] · [[price-volatility]] · [[ordc-price-adders]] · [[feature-engineering]] · [[load-zones]]
 
 ## Sources
-- [[sources/2026-06-30_data-and-eda-notes]]
+- [[sources/2026-06-30_data-and-eda-notes]] · [[sources/2026-07-01_research-meeting]]

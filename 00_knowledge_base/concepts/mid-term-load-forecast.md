@@ -19,14 +19,12 @@ Hourly, by weather zone. Forecast **error** available 2022–2025; 2021 long-ter
 ## Findings
 - **log(price) vs load prediction error: no strong correlation** — forecast error alone is
   a weak spike predictor. See [[load-and-demand]].
-
-## Legacy work
-- EDA: `06_mid_term_load_forecast_eda`.
-- Forecast ↔ RTM correlation: `06.1_[IN PROCESS]_load_forecast_rtm_coorelation`.
-- Parsing: `src/extraction/parse_mid_term_load_forecast_parquet.py`.
+- ⚠️ **Puzzle (2026-07-01):** forecast **over-prediction coincides with high prices**, which
+  is counter-intuitive (over-forecast should imply slack, not scarcity). Flagged to
+  investigate. See [[sources/2026-07-01_research-meeting]].
 
 ## Related
 - [[load-and-demand]] · [[price-volatility]] · [[feature-engineering]]
 
 ## Sources
-- [[sources/2026-06-30_data-and-eda-notes]]
+- [[sources/2026-06-30_data-and-eda-notes]] · [[sources/2026-07-01_research-meeting]]

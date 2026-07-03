@@ -15,23 +15,27 @@ primary fundamental pressure on prices; peaks and **net-load ramps** (load minus
 
 ## Data
 - **Actual load by forecast zone:** `NP6-346-CD` archive (2021–Nov 2023) + live API
-  (Dec 2023–present). Legacy `02_ercot_load_eda`, `ercot_load_by_fzn.py`, `ercot_load_archive.py`.
+  (Dec 2023–present).
 
 ## Threads
 - **Mid-term load forecast** and forecast error: [[mid-term-load-forecast]].
 - **Adder demand** = load forecast − actual load (from 2021). See [[feature-engineering]].
 - **Data-center growth** as a new, less weather-correlated demand source:
   [[data-center-demand]].
-- Load × RTM price relationship: legacy `10.0_load_rtm_price_plot`.
-
 ## Findings
 - Time-series of load and RTM price tracked together; **price vs actual-load** scatter.
 - **log(price) vs load prediction error shows no strong correlation** — forecast error
   alone is a weak predictor of price spikes (motivates the adder-centric thesis). See
   [[mid-term-load-forecast]].
+- **Seasonality (2026-07-01):** `log(price)` vs load is **stronger in summer months** — use
+  monthly slices, not a pooled fit (`05_load_rtm_price_plot`).
+- **Total load is rising** over the study window (load vs temp, quadratic fit over years —
+  see [[weather-hdd-cdd]]).
+- **Net load** (load − wind − solar) is the preferred modeling target going forward — see
+  [[feature-engineering]], [[wind-power-production]].
 
 ## Related
-- [[mid-term-load-forecast]] · [[data-center-demand]] · [[weather-hdd-cdd]] · [[price-volatility]] · [[feature-engineering]]
+- [[mid-term-load-forecast]] · [[data-center-demand]] · [[weather-hdd-cdd]] · [[price-volatility]] · [[feature-engineering]] · [[wind-power-production]]
 
 ## Sources
-- [[sources/2026-06-30_data-and-eda-notes]]
+- [[sources/2026-06-30_data-and-eda-notes]] · [[sources/2026-07-01_research-meeting]]

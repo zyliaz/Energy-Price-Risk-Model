@@ -46,11 +46,11 @@ price ([[load-and-demand]]); NG × RTM ([[natural-gas-prices]]); forecast error 
 - **Trial before full extract** (step 1) validates auth/params cheaply — see [[data-extraction-guide]].
 - **Normalize archive output** to match live parquet schema exactly (columns, types, flags).
 - **One concept per cleaned file**; name with explicit date span (`_YYYYMMDD_YYYYMMDD`).
-- Path discipline: notebooks should read from `01_data/{1.2_raw_api,2_cleaned,3_analysis}`
-  (legacy notebooks still use old `data/…` paths — pending patch, see [[repo-migration-map]]).
+- Path discipline: notebooks read from `01_data/{1.2_raw_api,2_cleaned,3_analysis}` (path
+  patching complete as of 2026-07-01; see [[notebook-catalog]] for current per-notebook status).
 
 ## Related
-- [[data-extraction-guide]] · [[notebook-catalog]] · [[ercot-data-products]] · [[feature-engineering]] · [[repo-migration-map]]
+- [[data-extraction-guide]] · [[notebook-catalog]] · [[ercot-data-products]] · [[feature-engineering]]
 
 ## Sources
 - [[sources/2026-06-30_ercot-data-extraction-skill]]
