@@ -5,7 +5,7 @@ Produces a continuation parquet covering Dec 5 2025 through May 16 2026,
 mirroring the date range of the RTM price adder continuation file.
 
 Sources:
-    01_data/1.1_raw_bulk/ercot/RTM_2021_2026Mar/
+    01_data/1.1_raw_bulk/RTM_2021_2026Mar/
         rpt.00013061.….RTMLZHBSPP_2025.xlsx  ← Dec sheet only
         rpt.00013061.….RTMLZHBSPP_2026.xlsx  ← Jan–May sheets
 

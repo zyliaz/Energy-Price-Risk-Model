@@ -18,7 +18,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RAW_DIR  = str(PROJECT_ROOT / "01_data/1.1_raw_bulk/ercot/RTM Price Adders 2021-2025")
+RAW_DIR  = str(PROJECT_ROOT / "01_data/1.1_raw_bulk/RTM Price Adders 2021-2025")
 OUT_PATH = str(PROJECT_ROOT / "01_data/1.2_raw_api/rtm_price_adders_15min_20250105_20260517.parquet")
 
 HIST_PRICE_COLS = ["RTRDPA", "RTRDPRU", "RTRDPRD", "RTRDPRRS", "RTRDPECRS", "RTRDPNS"]

@@ -7,14 +7,14 @@ from their original Excel formats and writes consolidated parquet files.
 Source data layout
 ------------------
 DAM (report 13060, hourly):
-    01_data/1.1_raw_bulk/ercot/DAM_2021_2026Feb/
+    01_data/1.1_raw_bulk/DAM_2021_2026Feb/
         Historical DAM Load Zone and Hub Prices_YYYY/
             rpt.00013060.*.YYYYMMDD.*.DAMLZHBSPP_YYYY.zip   ← weekly snapshots
     Strategy: for each year, use the LATEST zip (most complete snapshot).
     Each zip contains one xlsx with 12 monthly sheets.
 
 RTM (report 13061, 15-minute intervals):
-    01_data/1.1_raw_bulk/ercot/RTM_2021_2026Mar/
+    01_data/1.1_raw_bulk/RTM_2021_2026Mar/
         rpt.00013061.*.RTMLZHBSPP_YYYY.xlsx   ← one file per year, 12 sheets each
 
 Output parquet files
@@ -48,7 +48,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RAW_BULK = PROJECT_ROOT / "01_data" / "1.1_raw_bulk" / "ercot"
+RAW_BULK = PROJECT_ROOT / "01_data" / "1.1_raw_bulk"
 RAW_API = PROJECT_ROOT / "01_data" / "1.2_raw_api"
 DAM_DIR = RAW_BULK / "DAM_2021_2026Feb"
 RTM_DIR = RAW_BULK / "RTM_2021_2026Mar"

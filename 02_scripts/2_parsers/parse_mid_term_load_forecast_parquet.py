@@ -1,6 +1,6 @@
 """Parse ERCOT Mid-Term Load Forecast Metrics xlsx files — Hourly Error column.
 
-Source:  01_data/1.1_raw_bulk/ercot/Load Forcast/Mid_Term_Load_Forecast_Metrics_*.xlsx
+Source:  01_data/1.1_raw_bulk/Load Forcast/Mid_Term_Load_Forecast_Metrics_*.xlsx
 Output:  01_data/1.2_raw_api/mid_term_load_forecast_<min>_<max>.parquet
 
 Each xlsx file covers one calendar month.  Each sheet is one of 8 ERCOT weather
@@ -42,7 +42,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RAW_DIR = PROJECT_ROOT / "01_data" / "1.1_raw_bulk" / "ercot" / "Load Forcast"
+RAW_DIR = PROJECT_ROOT / "01_data" / "1.1_raw_bulk" / "Load Forcast"
 OUT_DIR = PROJECT_ROOT / "01_data" / "1.2_raw_api"
 
 # Sheet → output column suffix (prefix = "forecast")

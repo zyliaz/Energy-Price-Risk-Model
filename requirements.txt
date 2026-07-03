@@ -5,3 +5,4 @@ duckdb>=0.9
 matplotlib>=3.7
 jupyter>=1.0
 ipykernel>=6.0
+python-dotenv>=1.0
