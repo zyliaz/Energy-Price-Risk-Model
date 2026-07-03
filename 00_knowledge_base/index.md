@@ -1,7 +1,7 @@
 ---
 title: Index
 type: overview
-updated: 2026-06-30
+updated: 2026-07-03
 ---
 
 # Wiki Index
@@ -59,6 +59,9 @@ Update on every ingest.
 - [[sources/2026-06-30_ercot-data-extraction-skill]] — extraction playbook + pitfalls (from old repo).
 - [[sources/2026-07-01_research-meeting]] — advisor meeting: net-load direction, seasonality, deliverables.
 - [[sources/2026-07-01_kickoff-project-tracker]] — PM kickoff: Notion ↔ repo bridge via `Related Area`.
+- [[sources/2026-07-03_analysis-summary]] — progress note: NG-correlation 2nd deviation (Aug 2023),
+  refined monthly seasonality, sharpened MTLF over-prediction puzzle, weather/population findings.
 
 ## Analysis (filed findings)
-_None yet. Use `analysis/_TEMPLATE.md` when filing a reusable query result._
+- [[analysis/2026-07-03_empirical-findings-summary]] — consolidated EDA/analysis results across
+  NG prices, price adders, load/forecast error, and weather as of 2026-07-03.

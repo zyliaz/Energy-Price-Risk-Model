@@ -3,8 +3,8 @@ title: Load & Demand
 type: concept
 tags: [demand, ercot]
 status: developing
-sources: 0
-updated: 2026-06-30
+sources: 1
+updated: 2026-07-03
 ---
 
 # Load & Demand
@@ -29,6 +29,11 @@ primary fundamental pressure on prices; peaks and **net-load ramps** (load minus
   [[mid-term-load-forecast]].
 - **Seasonality (2026-07-01):** `log(price)` vs load is **stronger in summer months** — use
   monthly slices, not a pooled fit (`05_load_rtm_price_plot`).
+- **Refined (2026-07-03):** faceting by month shows the correlation is actually stronger in
+  **months 1–2 and 5–10** (Jan–Feb, May–Oct), not just summer — narrows the monthly-slice
+  claim above. Suggests **subtracting solar/wind from load** so the residual is better
+  explained by [[natural-gas-prices|gas prices]]. See
+  [[analysis/2026-07-03_empirical-findings-summary]].
 - **Total load is rising** over the study window (load vs temp, quadratic fit over years —
   see [[weather-hdd-cdd]]).
 - **Net load** (load − wind − solar) is the preferred modeling target going forward — see
@@ -38,4 +43,5 @@ primary fundamental pressure on prices; peaks and **net-load ramps** (load minus
 - [[mid-term-load-forecast]] · [[data-center-demand]] · [[weather-hdd-cdd]] · [[price-volatility]] · [[feature-engineering]] · [[wind-power-production]]
 
 ## Sources
-- [[sources/2026-06-30_data-and-eda-notes]] · [[sources/2026-07-01_research-meeting]]
+- [[sources/2026-06-30_data-and-eda-notes]] · [[sources/2026-07-01_research-meeting]] ·
+  [[sources/2026-07-03_analysis-summary]]

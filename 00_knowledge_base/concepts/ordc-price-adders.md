@@ -3,7 +3,7 @@ title: ORDC Price Adders
 type: concept
 tags: [scarcity, pricing, ercot, core]
 status: developing
-sources: 2
+sources: 3
 updated: 2026-07-03
 ---
 
@@ -49,8 +49,13 @@ tight-reserve moments (often **low [[wind-power-production|wind]] + high
 - **PA > SPP cases:** PA can exceed SPP when local LMP < 0 (reliability-deployment
   suppression, or regional wind) — open hypothesis, validate with nodal LMP. See [[lmp-spp]].
 
+> **(2026-07-03)** Reproduced on both schemas: pre-Dec-2025 activation/tail behavior as above,
+> and the post-Dec-2025 RTC+B/ASDC fields ([[rtc-b-asdc]]) show the same activation-by-quantile
+> pattern with no new deviation flagged. See [[analysis/2026-07-03_empirical-findings-summary]].
+
 ## Related
 - [[rtc-b-asdc]] · [[lmp-spp]] · [[ancillary-services]] · [[price-volatility]] · [[energy-only-market]] · [[puct]]
 
 ## Sources
-- [[sources/2026-06-30_ercot-market-concepts]] · [[sources/2026-06-30_data-and-eda-notes]]
+- [[sources/2026-06-30_ercot-market-concepts]] · [[sources/2026-06-30_data-and-eda-notes]] ·
+  [[sources/2026-07-03_analysis-summary]]

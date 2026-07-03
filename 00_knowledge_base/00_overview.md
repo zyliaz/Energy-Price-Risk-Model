@@ -32,7 +32,8 @@ variance is explained by adders vs. underlying load/wind/gas fundamentals.
 Early evidence consistent with this: **log(price) vs load-forecast-error shows no strong
 correlation** (fundamentals alone don't explain spikes), while **adder activation rises
 sharply in the top price quantiles**. Natural-gas series correlate tightly *except* during
-extreme events (Feb 2021 Uri), so tail risk is concentrated in scarcity/extreme conditions.
+extreme events (Feb 2021 Uri, and a second flagged deviation in Aug 2023), so tail risk is
+concentrated in scarcity/extreme conditions. See [[natural-gas-prices]].
 
 > ⚠️ Starting hypothesis, not a conclusion. Update as `03_notebooks/02_analysis` produces
 > results, and log every revision.
@@ -50,7 +51,8 @@ extreme events (Feb 2021 Uri), so tail risk is concentrated in scarcity/extreme 
 - Preferred modeling target is **net load = load − wind − solar** (add a renewable-generation
   pipeline), not raw load. See [[feature-engineering]], [[wind-power-production]].
 - Seasonal structure matters: `log(price)` vs load correlates more strongly in **summer**
-  (use monthly slices). See [[load-and-demand]].
+  (use monthly slices). See [[load-and-demand]]. Refined 2026-07-03: strongest specifically
+  in **months 1–2 and 5–10**, not a clean summer/winter split.
 - **Deliverable:** academic paper / white paper + conference poster + git repo.
 - Source: [[sources/2026-07-01_research-meeting]].
 
@@ -70,8 +72,13 @@ note for why the topic narrowed.
 - Are price-adder dynamics changing post-2025 (new PA regime)?
 - Does data-center load growth measurably raise baseline volatility yet?
 - Does **net load** (load − wind − solar) model price better than raw load? (2026-07-01)
-- Why does load-forecast **over-prediction coincide with high prices**? (seems backwards)
-- How much stronger is the load–price relationship in **summer** vs other seasons?
+- Why does load-forecast **over-prediction coincide with high prices**? (seems backwards) —
+  refined 2026-07-03: concentrated at high load+price hours specifically; open hypothesis is
+  MTLF-vs-DAM timing. See [[mid-term-load-forecast]].
+- How much stronger is the load–price relationship in **summer** vs other seasons? —
+  refined 2026-07-03: strongest specifically in months 1–2 and 5–10. See [[load-and-demand]].
+- What caused the **Aug 2023** natural-gas price-correlation deviation (alongside the known
+  Feb 2021 Uri break)? See [[natural-gas-prices]].
 
 ## Related
 - [[price-volatility]] · [[ordc-price-adders]] · [[rtc-b-asdc]] · [[lmp-spp]] · [[rtm-dam]]
@@ -79,4 +86,5 @@ note for why the topic narrowed.
 - [[ancillary-services]] · [[feature-engineering]]
 
 ## Sources
-- [[sources/2026-06-30_ercot-market-concepts]] · [[sources/2026-06-30_data-and-eda-notes]]
+- [[sources/2026-06-30_ercot-market-concepts]] · [[sources/2026-06-30_data-and-eda-notes]] ·
+  [[sources/2026-07-03_analysis-summary]]

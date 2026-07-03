@@ -179,7 +179,22 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 - **Purpose:** Post-2025 ancillary-adder activation by price quantile.
 - **In:** `post_202512_price_adders_hourly_binary.csv`, `rtm_lzhb_spp_20251205_20260516.parquet` (1.2).
 - **Out:** `rtm_price_mean_...csv`, activation csv. **Methods:** quantile bins. **Wiki:** [[rtc-b-asdc]]
-- **Last run: 2026-07-03 — PASS.**
+- Audited 2026-07-03 for the same activation-rate scaling bug found in `02_price_adder_activation`
+  (mean-of-dollar-value × 100 instead of mean-of-binary-flag). **Not present here** — this
+  notebook's source file is genuinely binarized upstream in `06_new_pa_cleaning` (`(col > 0)
+  .astype(int)`, confirmed 0/1-only in both the raw hourly frame and this notebook's input),
+  so `.mean() × 100` correctly yields a bounded [0,100]% rate. Verified against the prior label:
+  before this audit the notebook's stored execution counts were **non-sequential** (76–78
+  sandwiched between 101–108), which under the status-label rule above means the earlier "PASS"
+  hadn't actually been earned by a fresh top-to-bottom run — re-executed now, exec counts 1–11,
+  0 errors, output values confirmed bounded [0,1] pre-scaling.
+- ⚠️ **Finding, not yet explained:** `RTRDPNS` is active in **100% of hours** (0 zero-hours out
+  of 3,911, the entire Dec-2025–May-2026 window) — every other adder has a real zero-rate
+  (`RTRDPA` 84%, `RTRDPRU` 8%, `RTRDPRD` 3%, `RTRDPRRS` 4%, `RTRDPECRS` 4%). Could be a genuine
+  RTC+B characteristic (NS priced in every interval) or a parsing artifact — traced as far as
+  the raw hourly-averaged frame (also 0% zero there, so not a binarization bug) but not further
+  upstream. Human judgment needed.
+- **Last run: 2026-07-03 — PASS** (re-executed `--inplace`).
 
 ### 04_price_adder_rtm_load_correlation   [analysis · stable]
 - **Purpose:** Adder ↔ RTM ↔ load correlations, **both regimes** (largest notebook, 27 cells).
