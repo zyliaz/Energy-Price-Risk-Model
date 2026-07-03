@@ -4,7 +4,7 @@ type: concept
 tags: [methods, features]
 status: developing
 sources: 1
-updated: 2026-06-30
+updated: 2026-07-03
 ---
 
 # Feature Engineering
@@ -23,6 +23,13 @@ consistent.
 ## Open / to-add
 - Price-volatility target definition (see [[price-volatility]]) — rolling std, spike flags.
 - Region/zone aggregation using mappings in [[load-zones]].
+- **Alt-forecast-model ensemble (2026-07-03):** 7 alt MTLF models (A3/A6/E/E1/E2/E3/M) now
+  available per zone as load-prediction features — see [[mid-term-load-forecast]]. EDA'd in
+  `09_mtlf_models_eda` → reduced to a single ERCOT-only ensemble-mean feature,
+  `model_ensemble_features_ERCOT_*.csv` (per-model error and ensemble std/error dropped
+  entirely per human instruction, deferred until needed). Not yet used downstream in any
+  `02_analysis` notebook — candidate: ensemble mean vs ERCOT's own "Selected" as a
+  forecast-disagreement signal (uncertainty/std feature would need to be reintroduced first).
 
 ## Related
 - [[load-and-demand]] · [[weather-hdd-cdd]] · [[wind-power-production]] · [[price-volatility]]

@@ -11,8 +11,8 @@ updated: 2026-07-03
 
 What each **kept** notebook does and how `03_notebooks/` is organized. Companion to
 [[extraction-scripts]] (the scripts) and [[analysis-workflow]] (the pipeline). Reflects the
-16 notebooks in the new repo (old `00_emil`/`03`/`04`/`05` and 2 helper scripts dropped
-during migration, not renamed/kept).
+18 notebooks in the new repo (old `00_emil`/`03`/`04`/`05` and 2 helper scripts dropped
+during migration, not renamed/kept; `09_mtlf_models_eda` added 2026-07-03).
 
 ## Grouping
 - **`00_check/`** — prelim API inspection before writing an extractor.
@@ -73,6 +73,17 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   (`ERCOT_USERNAME`/`ERCOT_PASSWORD`/`ERCOT_SUBSCRIPTION_KEY`) that only the human has —
   cannot be resolved by re-running code. Copy `.env.example` → `.env` and fill in credentials
   to actually verify this one end-to-end.
+
+### 01_wind_solar_5min_endpoint_check   [check · blocked]
+- **Purpose:** Pre-scraper review for the planned 5-min wind/solar extractors. Four phases:
+  (1) endpoint + field schema for NP4-743/746/733/738/745-CD via EMIL artifact discovery,
+  (2) live-API history depth probe, (3) archive-API depth (oldest doc), (4) row-volume →
+  parquet size estimate. Ends with a human decision checklist (product choice, params,
+  backfill need) gating `ercot_wpp_5min.py` / `ercot_spp_5min.py`.
+- **In:** Public API (live + archive). **Out:** none. **Methods:** requests. **Wiki:**
+  [[data-extraction-guide]], [[wind-power-production]]
+- **Last run: never — blocked on the same missing `.env` as `00_emil_api_check`.** Built
+  2026-07-03; syntax-validated only. Human must run and review before scrapers are written.
 
 ## 01_eda — single-source clean + explore
 ### 00_rtm_price_eda   [eda · stable]
@@ -137,6 +148,31 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 - **Out:** `Daily_HDD_rtm_load_2021_2025.csv`. **Methods:** merge, resample. **Wiki:** [[weather-hdd-cdd]]
 - **Last run: 2026-07-03 — PASS.**
 
+### 09_mtlf_models_eda   [eda · stable]
+- **Purpose:** Alt-forecast-model EDA (companion to `02_mtlf_eda`): the 7 extra ERCOT models
+  (A3/A6/E/E1/E2/E3/M) per zone, reduced to an **ensemble-mean feature only**. Per-model error
+  (vs actual) and ensemble spread/std/error were removed entirely (not just excluded from
+  export) per explicit human instruction — deferred until a concrete downstream use needs
+  them. **Exports are ERCOT-only, for now**; per-zone breakdown is still computed internally
+  (for validation + the daily-mean-by-zone figure) but not exported.
+- **In:** `mid_term_load_forecast_models_20220201_20251201.parquet` (1.2_raw_api). **Out:**
+  `Hourly_ERCOT_all_models_*.csv` (actual + all models, ERCOT only), `model_ensemble_features_ERCOT_*.csv`
+  (ensemble mean only, ERCOT only) + 2 daily-mean comparison figures, still computed across
+  all 9 zones internally (2_cleaned/load/forecast/models). Prior `model_error_ERCOT_*.csv`
+  and the original multi-zone `model_error_by_zone_*.csv`/`model_ensemble_features_*.csv`
+  (incl. ensemble std/error) were all deleted, not kept alongside.
+- **Methods:** duckdb, groupby, ensemble mean (per-model error/std/error calc removed).
+  **Wiki:** [[mid-term-load-forecast]], [[feature-engineering]]
+- Note: reads directly from `1.2_raw_api` (the parser's actual output location), unlike
+  `02_mtlf_eda` which reads a `2_cleaned` copy of the base parser's output — that's a
+  pre-existing path oddity in `02_mtlf_eda`, not fixed here (out of scope for this task).
+- Finding: zone-sum vs ERCOT-total validation diff is larger for the alt-model ensemble mean
+  (mean |diff| ~359 MW, max ~24,025 MW) than for `Selected` (mean ~253 MW, max ~6,790 MW) —
+  each zone's alt models are fit independently, so they're additively less consistent than
+  ERCOT's own `Selected` forecast. ~0.5-1% of system load either way; not investigated further.
+- **Last run: 2026-07-03 — PASS** (fresh `nbconvert --execute`, 0 errors, both declared outputs
+  confirmed on disk under the ERCOT-only names above).
+
 ## 02_analysis — multi-source interactions
 ### 00_load_forecast_rtm_correlation_wip   [analysis · wip]
 - **Purpose:** Load-forecast error vs RTM price. Finding: **log(price) vs forecast error → weak**.
@@ -188,12 +224,11 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   sandwiched between 101–108), which under the status-label rule above means the earlier "PASS"
   hadn't actually been earned by a fresh top-to-bottom run — re-executed now, exec counts 1–11,
   0 errors, output values confirmed bounded [0,1] pre-scaling.
-- ⚠️ **Finding, not yet explained:** `RTRDPNS` is active in **100% of hours** (0 zero-hours out
-  of 3,911, the entire Dec-2025–May-2026 window) — every other adder has a real zero-rate
-  (`RTRDPA` 84%, `RTRDPRU` 8%, `RTRDPRD` 3%, `RTRDPRRS` 4%, `RTRDPECRS` 4%). Could be a genuine
-  RTC+B characteristic (NS priced in every interval) or a parsing artifact — traced as far as
-  the raw hourly-averaged frame (also 0% zero there, so not a binarization bug) but not further
-  upstream. Human judgment needed.
+- ✅ **Finding, confirmed (human) 2026-07-03:** `RTRDPNS` is active in **100% of hours** (0
+  zero-hours out of 3,911, the entire Dec-2025–May-2026 window) — every other adder has a real
+  zero-rate (`RTRDPA` 84%, `RTRDPRU` 8%, `RTRDPRD` 3%, `RTRDPRRS` 4%, `RTRDPECRS` 4%). This is
+  a genuine RTC+B system characteristic (Non-Spin is exhausted first in the reserve fill order,
+  so it prices in nearly every interval), not a parsing artifact. Recorded in [[rtc-b-asdc]].
 - **Last run: 2026-07-03 — PASS** (re-executed `--inplace`).
 
 ### 04_price_adder_rtm_load_correlation   [analysis · stable]

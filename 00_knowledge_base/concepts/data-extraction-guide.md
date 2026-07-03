@@ -4,7 +4,7 @@ type: concept
 tags: [data, extraction, api, methods, reference]
 status: stable
 sources: 1
-updated: 2026-06-30
+updated: 2026-07-03
 ---
 
 # Data Extraction Guide
@@ -25,15 +25,20 @@ iterations. Read before adding a **new data source**. Full detail:
 |---|---|---|---|---|
 | RTM LMP (5-min) | NP6-788-CD | **live Dec 2023+**, archive 2021–2023 | live: monthly chunk; pre-2024: archive list+POST | `SCEDTimestampFrom/To` (ISO) |
 | Load by fcst zone | NP6-346-CD | live **2021+** | **single-pass** paginate | `operatingDayFrom/To` (date) |
-| Wind by geo (WPP) | NP4-742-CD | live 2021+ | single-pass | `deliveryDateFrom/To` |
-| **Solar by geo** | NP4-745-CD | live 2021+ | single-pass | `deliveryDateFrom/To` |
+| Wind by geo (WPP) | NP4-742-CD | **live Dec 2023+**, archive 2021–2023 (`ercot_wpp_archive.py`) | single-pass | `deliveryDateFrom/To` |
+| **Solar by geo** | NP4-745-CD | claimed live 2021+ — **unverified, scraper never run** | single-pass | `deliveryDateFrom/To` |
+| Wind 5-min by geo | NP4-743-CD | TBD → `00_check/01` notebook | planned `ercot_wpp_5min.py` | TBD (Phase 1 of notebook) |
+| Solar 5-min by geo | NP4-746-CD | TBD → `00_check/01` notebook | planned `ercot_spp_5min.py` | TBD (Phase 1 of notebook) |
 | DAM SPP / RTM SPP (bulk) | 13060 / 13061 | archive | bulk zip download | — |
 | Price adders | NP6-793-ER | 2014+ | — | — |
 
 > ⚠️ **Naming trap:** `ercot_spp_by_geo.py` = **Solar Power Production** (NP4-745-CD), *not*
 > Settlement Point Price. "SPP" is overloaded across this project. See [[lmp-spp]] for the
 > price SPP.
-> ⚠️ Only **NP6-788-CD** has the Dec-2023 live cutoff; load/wind/solar go back to 2021 live.
+> ⚠️ CORRECTED 2026-07-03: this page previously said "only NP6-788-CD has the Dec-2023 live
+> cutoff; load/wind/solar go back to 2021 live." Wrong for wind — the on-disk live wind pull
+> starts 2023-12-09 (which is why `ercot_wpp_archive.py` exists). Solar's 2021+ claim is
+> untested. Never trust a coverage claim without a dated pull or notebook check behind it.
 
 ## Top pitfalls (ordered by surprise)
 1. **Zone systems don't align.** Price LZ ≠ forecast zone ≠ wind region ≠ solar region.
@@ -49,6 +54,19 @@ iterations. Read before adding a **new data source**. Full detail:
    `DSTFlag=FALSE` (load/gen). Always check row counts near the DST Sundays.
 6. **LMP timestamps have sub-minute offsets** (:27, :16). Resample `.resample('1h').mean()`.
 7. **Keep price extremes** — negative or $5,000+/MWh LMPs are real; flag, don't drop.
+8. **Script exists ≠ data exists.** `ercot_spp_by_geo.py` sat unrun with no output parquet
+   while the wiki implied solar was covered. Verify the output file on disk, not the script.
+9. **Rolling-window snapshot duplication.** Gen reports repost each interval in every
+   overlapping snapshot (~12× for 5-min reports w/ 60-min windows; ~216× for wind hourly
+   archive). Undeduped: `wpp_archive` parquet = 4.78M rows vs ~27k real intervals. Dedupe on
+   the interval key at write time — actuals are settled, any snapshot copy is equivalent.
+   Corollary: parquet size fears come from duplication, not resolution; deduped 5-min ≈ 3–5 MB/yr.
+10. **Our own outputs can mismatch too.** Wind archive parquet stores `hourEnding` as
+    `"01:00"` strings + no `postedDatetime`; live stores int 1–24. Normalize to the live
+    schema *before* writing, or the merge breaks later (pitfall 2 applies to ourselves).
+11. **Check for by-geo report variants before building.** 5-min by-geo products are
+    **NP4-743-CD** (wind) / **NP4-746-CD** (solar) — not the system-wide NP4-733/738-CD a
+    keyword search surfaces first. Resolve IDs via EMIL artifact discovery, not guessing.
 
 ## Timeouts (non-member, empirical)
 Connect 10 s · read 60 s (live) / 180 s (archive list) / 240 s (archive download) · sleep

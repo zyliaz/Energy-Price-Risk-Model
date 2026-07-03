@@ -29,6 +29,14 @@ Reliability-deployment prices per product: `RTRDPRU` (Reg-Up), `RTRDPRD` (Reg-Do
 `RTRDPRRS` (Responsive Reserve), `RTRDPECRS` (ERCOT Contingency Reserve), `RTRDPNS`
 (Non-Spin), plus `RTRDPA`. These replace the pre-2025 `RTRSVPOR` / `RTRSVPOFF` / `RTRDP`.
 
+## Empirical findings
+- **(2026-07-03)** `RTRDPNS` (Non-Spin) is active in **100% of hours** across the full
+  post-2025 window analyzed (Dec 2025–May 2026, 0 zero-hours out of 3,911) — every other
+  reserve product has a normal zero-rate (3–84%). Confirmed (human) to be a genuine
+  characteristic of the regime, not a data artifact: consistent with Non-Spin being
+  exhausted first in the reserve fill order (see "What changed" above), so it prices in
+  nearly every interval. See [[notebook-catalog|03_new_pa_activation]].
+
 ## Why it matters
 Any volatility model spanning the boundary must treat Dec 2025 as a regime break — the
 price-formation mechanism, the data schema, and the meaning of "price adder" all change.

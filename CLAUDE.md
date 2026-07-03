@@ -51,7 +51,7 @@ ERCOT-Research/
 │   ├── 1_scrapers/            ← ERCOT-API extractors (+ ercot_common core)
 │   └── 2_parsers/             ← excel→parquet + adder parsers
 ├── 03_notebooks/              ← EDA & analysis notebooks
-│   ├── 00_check/              ← (empty; future prelim API-check notebook)
+│   ├── 00_check/              ← prelim API-check notebooks (run before building any extractor)
 │   ├── 01_eda/
 │   └── 02_analysis/
 └── 04_jobs/                   ← long-running batch jobs (downloads, archives)
@@ -174,6 +174,11 @@ Triggers → what to update:
 - New **data source/file** → [[ercot-data-products]], [[analysis-workflow]] lineage, and the
   relevant driver page.
 - New **finding** → the concept page + `00_overview` thesis if it shifts.
+- New **data pipeline** (scraper/parser/job) → in the **same session**, append any caveats or
+  mistakes-to-avoid discovered while building it to [[data-extraction-guide]] "Top pitfalls"
+  (concise + precise; one canonical entry, no duplicates), and correct any coverage/schema
+  claim the build disproved. Every pipeline starts with a `00_check` endpoint notebook the
+  human reviews before the extractor is written.
 - Structure/convention change → this `CLAUDE.md`.
 Always finish by updating `index.md` and appending one line to `log.md`.
 

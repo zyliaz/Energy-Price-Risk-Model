@@ -34,7 +34,8 @@ Update on every ingest.
 - [[wind-power-production]] — wind & solar output, forecast error, capacity factor.
 - [[natural-gas-prices]] — marginal fuel cost (Henry Hub, Citygate, Waha).
 - [[weather-hdd-cdd]] — temperature → load (GRIDMET; HDD/CDD).
-- [[mid-term-load-forecast]] — forecast error channel.
+- [[mid-term-load-forecast]] — forecast error channel; now also carries 7 alt-model
+  load-prediction features (A3/A6/E/E1/E2/E3/M).
 - [[data-center-demand]] — structural demand shift (hypothesis-stage).
 - [[load-zones]] — settlement geography, spatial price patterns, mappings.
 
@@ -47,11 +48,12 @@ Update on every ingest.
 
 ## Methods
 - [[feature-engineering]] — adder demand, CDD/HDD, capacity factor, net load.
-- [[notebook-catalog]] — architecture of the 16 kept notebooks (I/O, patterns) + template.
+- [[notebook-catalog]] — architecture of the 18 kept notebooks (I/O, patterns) + template.
   Also tracks 3 open gaps: no WPP EDA, no RTM-vs-DAM comparison, no node→zone cleaning
   notebook (all dropped, not renamed, during the old→new repo migration). Every entry now
   carries a `Last run` execution stamp (2026-07-03). All previously-broken notebooks fixed as
   of 2026-07-03 except `00_emil_api_check` (blocked on missing `.env` credentials, not a code bug).
+  New 2026-07-03: `09_mtlf_models_eda`, alt-forecast-model EDA + ensemble features.
 
 ## Sources
 - [[sources/2026-06-30_ercot-market-concepts]] — pricing mechanics (ORDC/ASDC, LMP/SPP, ancillary).

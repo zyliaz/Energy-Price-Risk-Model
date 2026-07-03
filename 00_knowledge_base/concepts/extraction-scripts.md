@@ -4,7 +4,7 @@ type: concept
 tags: [data, extraction, scripts, methods, reference]
 status: stable
 sources: 1
-updated: 2026-06-30
+updated: 2026-07-03
 ---
 
 # Extraction Scripts (architecture)
@@ -38,6 +38,7 @@ extractors share one core, `ercot_common.py` (`ERCOTAuth`, `ERCOTAPIClient`,
 | `organize_lmp_parquet` | Local DAM/RTM Excel report archives → parquet |
 | `organize_rtm_lmp_2026` | RTM (report 13061) Excel → parquet |
 | `parse_mid_term_load_forecast_parquet` | MTLF Metrics xlsx → parquet (hourly error) |
+| `parse_mid_term_load_forecast_models_parquet` | MTLF Metrics xlsx → parquet (all 7 alt forecast models: A3/A6/E/E1/E2/E3/M, per zone — load-prediction features, no error calc) |
 | `parse_rtm_price_adders` | Pre-2025 price adders → parquet |
 | `parse_rtm_price_adders_2025dec_2026` | Post-2025 (RTC+B) adders → parquet |
 
