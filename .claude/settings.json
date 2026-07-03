@@ -1,5 +1,12 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/wiki_drift_check.sh\"" }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [

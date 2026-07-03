@@ -13,6 +13,10 @@ __pycache__/
 *.parquet
 *.csv
 
+# Raw/cleaned/analysis data layer — immutable per CLAUDE.md, never edited or committed;
+# includes files >100MB (GitHub hard limit) such as CDD weather rasters and shapefiles.
+01_data/
+
 # Jupyter checkpoints
 .ipynb_checkpoints/
 
@@ -21,3 +25,6 @@ __pycache__/
 .env.*
 !.env.example
 *.key
+
+# LLM-wiki drift marker (local)
+.claude/.wiki_sync_state

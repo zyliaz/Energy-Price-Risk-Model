@@ -48,9 +48,10 @@ ERCOT-Research/
 │   ├── 2_cleaned/             ← cleaned/processed datasets
 │   └── 3_analysis/            ← analysis-ready / derived datasets
 ├── 02_scripts/                ← extraction & transformation code
-│   └── 1_api_extraction/
+│   ├── 1_scrapers/            ← ERCOT-API extractors (+ ercot_common core)
+│   └── 2_parsers/             ← excel→parquet + adder parsers
 ├── 03_notebooks/              ← EDA & analysis notebooks
-│   ├── 00_cleaning/
+│   ├── 00_check/              ← (empty; future prelim API-check notebook)
 │   ├── 01_eda/
 │   └── 02_analysis/
 └── 04_jobs/                   ← long-running batch jobs (downloads, archives)
@@ -177,8 +178,28 @@ Triggers → what to update:
 Always finish by updating `index.md` and appending one line to `log.md`.
 
 **Enforced by hooks** (`.claude/settings.json`):
+- `SessionStart` → `wiki_drift_check.sh` compares the repo against the last-seen commit +
+  working tree; if content dirs changed **outside a session**, it lists them and prompts a
+  wiki reconcile. (Marker: `.claude/.wiki_sync_state`, gitignored.)
 - `UserPromptSubmit` → `new_source_checklist.sh` injects [[new-source-checklist]] when a
   data-source task is detected.
 - `PostToolUse` (Write/Edit) → `wiki_sync_reminder.sh` reminds you to sync the right catalog
   page + `index.md`/`log.md` after any change under `01_data/`, `02_scripts/`,
   `03_notebooks/`, or `04_jobs/`.
+
+## 9. Sync Notion meeting notes → wiki (standing rule)
+The human logs meetings in the Notion **Meeting Notes & Insights** ("Notes") database. Every
+new note must be reconciled into the wiki. Detection is **self-tracking**: a note is "new" if
+there is no `sources/YYYY-MM-DD_slug.md` page for it yet.
+
+Procedure per new note:
+1. `notion-search` (scoped to the Notes data source) to list notes; `notion-fetch` each
+   note's full page (Notes / Insights / Action items).
+2. Create `sources/YYYY-MM-DD_meeting-slug.md` summarizing it.
+3. Push each **insight** into the relevant concept page(s) + revise `00_overview` thesis /
+   open questions if direction shifts.
+4. Mirror **action items** to the Notion **To-dos** database (map to an `Area`).
+5. Update `index.md`; append one `log.md` line.
+
+Runs at session start and/or via the scheduled task. Uses `notion-search`+`notion-fetch`
+(the SQL `query-data-sources` tool needs a paid Notion plan).
