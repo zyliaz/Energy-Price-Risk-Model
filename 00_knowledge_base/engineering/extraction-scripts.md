@@ -1,6 +1,6 @@
 ---
 title: Extraction Scripts (architecture)
-type: concept
+type: engineering
 tags: [data, extraction, scripts, methods, reference]
 status: stable
 sources: 1

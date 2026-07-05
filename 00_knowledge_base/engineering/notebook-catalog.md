@@ -1,6 +1,6 @@
 ---
 title: Notebook Catalog (architecture)
-type: concept
+type: engineering
 tags: [methods, notebooks, reference]
 status: developing
 sources: 0
@@ -84,6 +84,9 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   [[data-extraction-guide]], [[wind-power-production]]
 - **Last run: never — blocked on the same missing `.env` as `00_emil_api_check`.** Built
   2026-07-03; syntax-validated only. Human must run and review before scrapers are written.
+- Carries the canonical **zone-column-name reference table** (weather/LZ/FZN/wind/solar
+  spellings as they appear in parquets) for schema checks; `00_emil_api_check` points here.
+  Wiki mirror: [[load-zones]].
 
 ## 01_eda — single-source clean + explore
 ### 00_rtm_price_eda   [eda · stable]

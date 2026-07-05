@@ -12,14 +12,8 @@ Read this whole file at the start of every session.
 ## 1. The research
 
 **Question:** What drives wholesale price volatility in **ERCOT**? Decompose how
-load (incl. variable data-center demand), wind/solar output, natural-gas (Waha)
-prices, weather, and ORDC scarcity **price adders** each contribute to real-time
-(RTM) and day-ahead (DAM) price volatility.
-
-> Scope note: This project began as an ERCOT-vs-PJM (energy-only vs capacity market)
-> comparison. It has since narrowed to **ERCOT-only**, focused on the *drivers* of
-> price volatility. PJM material is retained only as background/contrast, not as a
-> primary axis. Do not create new PJM-centric pages unless the human re-expands scope.
+load, wind/solar output, natural-gas prices, weather, and ORDC scarcity **price adders** 
+each contribute to real-time (RTM) price volatility.
 
 **Working thesis** lives in `00_knowledge_base/00_overview.md` and evolves as
 sources accumulate. Never let the thesis drift silently — when a source changes it,
@@ -37,7 +31,9 @@ ERCOT-Research/
 │   ├── index.md               ← content catalog (update every ingest)
 │   ├── log.md                 ← chronological append-only record
 │   ├── entities/              ← markets, institutions, data sources, hubs
-│   ├── concepts/              ← mechanisms, metrics, methods
+│   ├── concepts/              ← MARKET KNOWLEDGE: mechanisms, metrics, drivers
+│   ├── engineering/           ← PIPELINE/ENGINEERING: extraction guides, script/notebook
+│   │                            catalogs, workflow & feature-engineering notes
 │   ├── sources/               ← one page per ingested source (note/data/paper)
 │   ├── analysis/              ← filed answers to your own queries / findings
 │   └── assets/                ← downloaded images, figures referenced by pages
@@ -52,8 +48,8 @@ ERCOT-Research/
 │   └── 2_parsers/             ← excel→parquet + adder parsers
 ├── 03_notebooks/              ← EDA & analysis notebooks
 │   ├── 00_check/              ← prelim API-check notebooks (run before building any extractor)
-│   ├── 01_eda/
-│   └── 02_analysis/
+│   ├── 01_eda/                ← single data source (summary stats, distribution patterns)
+│   └── 02_analysis/           ← multiple data source (merge, scatter plots, distribution patterns)
 └── 04_jobs/                   ← long-running batch jobs (downloads, archives)
 ```
 
@@ -71,7 +67,7 @@ Every wiki page starts with YAML frontmatter so Obsidian Dataview can query it:
 ```markdown
 ---
 title: ORDC Price Adders
-type: concept            # one of: overview | entity | concept | source | analysis
+type: concept            # one of: overview | entity | concept | engineering | source | analysis
 tags: [pricing, scarcity, ercot]
 status: stub             # stub | developing | stable
 sources: 3               # how many ingested sources inform this page
@@ -98,9 +94,13 @@ Rules:
 - **Links:** use Obsidian wikilinks `[[page-slug]]`. Every page should have inbound
   AND outbound links — no orphans.
 - **One concept/entity per page.** Split rather than let pages sprawl.
+- **Market vs engineering split:** pages about *how the market works* (`type: concept`)
+  live in `concepts/`; pages about *how we get/process data* — extraction, scripts,
+  notebooks, workflows, features (`type: engineering`) — live in `engineering/`.
+  Don't mix the two on one page; split and cross-link instead.
 - **Cite everything.** Claims trace back to a `sources/` page or a named dataset/notebook
   in `01_data` / `03_notebooks`.
-- **Flag contradictions inline** with `> ⚠️ CONTRADICTION:` and log them.
+- **Flag contradictions inline** with `> ⚠️ CONTRADICTION:`, log them, and notify the user.
 
 ---
 
@@ -152,7 +152,6 @@ by a web search or a new ERCOT/EIA pull. Report findings + suggest next question
 - **Energy-only market** — ERCOT recovers fixed costs through scarcity energy prices
   (no capacity payments); makes ORDC adders central to volatility. (PJM's capacity
   market kept only as background contrast.)
-- **Waha** — West Texas natural gas hub; NG price driver for ERCOT.
 - **HDD / CDD** — Heating / Cooling Degree Days (weather → load).
 - **EMIL / Public API** — ERCOT data delivery endpoints (report IDs like NP6-788-CD).
 

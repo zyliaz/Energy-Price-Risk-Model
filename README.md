@@ -25,7 +25,7 @@ cd 02_scripts/1_scrapers && python ercot_load_by_fzn.py --trial-only
 
 ## Adding a new data source
 Follow the 5-step pipeline — inspect → extract → aggregate → analyze single → merge across.
-See `00_knowledge_base/concepts/analysis-workflow.md` and `data-extraction-guide.md`
+See `00_knowledge_base/engineering/analysis-workflow.md` and `data-extraction-guide.md`
 (auth, endpoints, pitfalls, timeouts, EMIL, jobs convention). Use
 `03_notebooks/00_check/00_emil_api_check.ipynb` for step-1 inspection and
 `02_scripts/1_scrapers/ercot_load_by_fzn.py` as the extractor template (shared client/writer

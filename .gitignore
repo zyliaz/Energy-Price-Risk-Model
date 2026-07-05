@@ -26,5 +26,12 @@ __pycache__/
 !.env.example
 *.key
 
-# LLM-wiki drift marker (local)
-.claude/.wiki_sync_state
+# claude
+.claude
+
+# Obsidian vault
+00_knowledge_base/.obsidian/
+
+# Logs and private notes
+00_knowledge_base/sources/
+00_knowledge_base/log.md

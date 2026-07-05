@@ -1,6 +1,6 @@
 ---
 title: Analysis Workflow
-type: concept
+type: engineering
 tags: [methods, workflow, pipeline, reference]
 status: stable
 sources: 1

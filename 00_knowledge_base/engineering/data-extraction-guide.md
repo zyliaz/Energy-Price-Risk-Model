@@ -1,6 +1,6 @@
 ---
 title: Data Extraction Guide
-type: concept
+type: engineering
 tags: [data, extraction, api, methods, reference]
 status: stable
 sources: 1
@@ -41,9 +41,10 @@ iterations. Read before adding a **new data source**. Full detail:
 > untested. Never trust a coverage claim without a dated pull or notebook check behind it.
 
 ## Top pitfalls (ordered by surprise)
-1. **Zone systems don't align.** Price LZ ≠ forecast zone ≠ wind region ≠ solar region.
-   "North" wind ≠ "North" LZ; "NorthWest" solar = Panhandle, *not* North TX. Resolve via the
-   county mapping, by overlap %. See [[load-zones]].
+1. **Zone systems don't align.** Price LZ ≠ forecast zone ≠ weather zone ≠ wind/solar region.
+   "North" wind ≠ "North" LZ; "NorthWest" solar = Panhandle, *not* North TX. Even spellings
+   drift per source (`LZ_RAYB` in gpkg vs `LZ_RAYBN` in price parquets). Resolve via the
+   county mapping, by overlap %. Schemas + join caveats: [[load-zones]].
 2. **Archive ≠ live.** Archive CSV timestamps are US format `MM/DD/YYYY`; columns differ in
    case (`SettlementPoint` vs `settlementPoint`); flags are `Y/N` not bool; ZIP is **nested**
    (outer→inner→CSV). Normalize columns to match live parquet exactly.

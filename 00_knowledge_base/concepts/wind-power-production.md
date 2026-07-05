@@ -28,7 +28,8 @@ solar together define **net load**. Both convert to **capacity factor** as featu
 > See [[sources/2026-07-01_research-meeting]], [[extraction-scripts]].
 
 ## Data & mapping
-- Wind/solar production: live API, hourly, by **weather zone**.
+- Wind/solar production: live API, hourly, by **wind/solar region** (6 wind / 7 solar —
+  *not* the 8 MTLF weather zones; corrected 2026-07-03, see [[load-zones]]).
 - Region → county mapping: ERCOT "Wind and Solar Regions to County Mapping.xlsx" (2024-05).
   See [[load-zones]].
 - **Action item:** run full wind & solar extraction (resolve timeout issue).

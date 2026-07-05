@@ -17,8 +17,6 @@ driver of [[price-volatility]].
 - **Henry Hub** — hourly (`rngwhhdd`); national benchmark, used as "insurance" vs RTM.
 - **TX Citygate (S. TX)** — monthly (`ng_pri_sum_dcu_stx_m`).
 - **TX Electric Power Price** — monthly (same EIA page).
-- **[[waha-hub|Waha]]** — West Texas hub. ⚠️ **Gap:** `eia_ng_waha_download.py` was removed
-  (out of scope decision); a Henry Hub / citygate scraper is a to-build item. See [[extraction-scripts]].
 
 ## Findings
 - TX power-producer, citygate, and Henry Hub prices are **strongly correlated monthly
@@ -37,7 +35,7 @@ driver of [[price-volatility]].
   when attributing price variance.
 
 ## Related
-- [[waha-hub]] · [[eia]] · [[price-volatility]] · [[lmp-spp]]
+- [[eia]] · [[price-volatility]] · [[lmp-spp]]
 
 ## Sources
 - [[sources/2026-06-30_data-and-eda-notes]] · [[sources/2026-06-30_ercot-market-concepts]] ·

@@ -1,6 +1,6 @@
 ---
 title: Feature Engineering
-type: concept
+type: engineering
 tags: [methods, features]
 status: developing
 sources: 1

@@ -16,7 +16,7 @@ from:
 - **Load / demand** — total and net load, including increasingly variable
   **[[data-center-demand]]**.
 - **Renewable supply** — **[[wind-power-production]]** (and solar) and its forecast error.
-- **Fuel** — **[[natural-gas-prices]]** (Waha hub) as the marginal-cost setter.
+- **Fuel** — **[[natural-gas-prices]]** as the marginal-cost setter.
 - **Weather** — **[[weather-hdd-cdd]]** as an upstream driver of load.
 - **Scarcity mechanisms** — **[[ordc-price-adders]]**, which inject large, nonlinear
   price spikes under tight reserves.

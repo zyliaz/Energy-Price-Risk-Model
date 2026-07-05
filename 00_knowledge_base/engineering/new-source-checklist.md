@@ -1,6 +1,6 @@
 ---
 title: New-Source Checklist
-type: concept
+type: engineering
 tags: [methods, workflow, checklist]
 status: stable
 updated: 2026-06-30
