@@ -12,12 +12,10 @@ Read this whole file at the start of every session.
 ## 1. The research
 
 **Question:** What drives wholesale price volatility in **ERCOT**? Decompose how
-load, wind/solar output, natural-gas prices, weather, and ORDC scarcity **price adders** 
-each contribute to real-time (RTM) price volatility.
+load, wind/solar output, natural-gas prices, weather, and ORDC scarcity price adders each contribute to real-time (RTM) price volatility.
 
 **Working thesis** lives in `00_knowledge_base/00_overview.md` and evolves as
-sources accumulate. Never let the thesis drift silently — when a source changes it,
-update that page and note the change in the log.
+sources accumulate. Never let the thesis drift silently — when a source changes it, update that page and note the change in the log.
 
 ---
 
@@ -98,6 +96,12 @@ Rules:
   live in `concepts/`; pages about *how we get/process data* — extraction, scripts,
   notebooks, workflows, features (`type: engineering`) — live in `engineering/`.
   Don't mix the two on one page; split and cross-link instead.
+- **Analysis notes: one notebook, one conclusion, finding-named.** Each `analysis/` page
+  holds the conclusion of a **single notebook**; the filename is a slug stating the finding
+  itself (no date), e.g. `mtlf-overpredicts-at-high-load-price.md`; frontmatter carries
+  `notebook:` (path to the source notebook).
+- **Conclusions only.** Wiki sync updates record facts and findings backed by data/sources.
+  Never add follow-up questions or speculative hypotheses to wiki pages.
 - **Cite everything.** Claims trace back to a `sources/` page or a named dataset/notebook
   in `01_data` / `03_notebooks`.
 - **Flag contradictions inline** with `> ⚠️ CONTRADICTION:`, log them, and notify the user.
@@ -200,8 +204,8 @@ Procedure per new note:
 1. `notion-search` (scoped to the Notes data source) to list notes; `notion-fetch` each
    note's full page (Notes / Insights / Action items).
 2. Create `sources/YYYY-MM-DD_meeting-slug.md` summarizing it.
-3. Push each **insight** into the relevant concept page(s) + revise `00_overview` thesis /
-   open questions if direction shifts.
+3. Push each **insight** into the relevant concept page(s) + revise `00_overview` thesis
+   if direction shifts.
 4. Mirror **action items** to the Notion **To-dos** database (map to an `Area`).
 5. Update `index.md`; append one `log.md` line.
 

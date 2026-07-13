@@ -3,23 +3,20 @@ title: Overview & Thesis — Drivers of ERCOT Price Volatility
 type: overview
 tags: [ercot, price-volatility, thesis]
 status: developing
-updated: 2026-07-03
+updated: 2026-07-10
 ---
 
 # Drivers of ERCOT Price Volatility
 
 ## Research question
 What drives wholesale electricity **price volatility** in ERCOT? The goal is to
-decompose volatility in real-time (RTM) and day-ahead (DAM) prices into contributions
-from:
+decompose volatility in real-time (RTM) and day-ahead (DAM) prices into contributions from:
 
-- **Load / demand** — total and net load, including increasingly variable
-  **[[data-center-demand]]**.
+- **Load / demand** — total and net load.
 - **Renewable supply** — **[[wind-power-production]]** (and solar) and its forecast error.
 - **Fuel** — **[[natural-gas-prices]]** as the marginal-cost setter.
 - **Weather** — **[[weather-hdd-cdd]]** as an upstream driver of load.
-- **Scarcity mechanisms** — **[[ordc-price-adders]]**, which inject large, nonlinear
-  price spikes under tight reserves.
+- **Scarcity mechanisms** — **[[ordc-price-adders]]**, which inject large, nonlinear price spikes under tight reserves.
 
 ## Working thesis (evolving — v1.1, 2026-06-30)
 ERCOT's **[[energy-only-market]]** design concentrates fixed-cost recovery into a small
@@ -48,8 +45,9 @@ concentrated in scarcity/extreme conditions. See [[natural-gas-prices]].
 
 ## Direction (2026-07-01 advisor meeting)
 - **Stats model first**, aimed at **scenario identification**.
-- Preferred modeling target is **net load = load − wind − solar** (add a renewable-generation
-  pipeline), not raw load. See [[feature-engineering]], [[wind-power-production]].
+- Preferred modeling target is **net load = load − wind − solar**, not raw load. A combined
+  wind+solar generation series now exists (2026-07-10) but no notebook has computed net load
+  from it yet. See [[feature-engineering]], [[wind-power-production]].
 - Seasonal structure matters: `log(price)` vs load correlates more strongly in **summer**
   (use monthly slices). See [[load-and-demand]]. Refined 2026-07-03: strongest specifically
   in **months 1–2 and 5–10**, not a clean summer/winter split.
@@ -62,23 +60,9 @@ comparison is now background context, not a primary axis. See the [[scope-and-hi
 note for why the topic narrowed.
 
 ## How the analysis is structured
-- **Cleaning** → `03_notebooks/00_cleaning` (price, load, WPP, price-adder parsing).
-- **EDA** → `03_notebooks/01_eda` (price, load, WPP, NG correlation, HDD).
-- **Analysis** → `03_notebooks/02_analysis` (adder activation, load–price correlation).
-
-## Open questions
-- What share of RTM price variance is attributable to ORDC adders vs. fundamentals?
-- How does wind forecast error translate into price spikes?
-- Are price-adder dynamics changing post-2025 (new PA regime)?
-- Does data-center load growth measurably raise baseline volatility yet?
-- Does **net load** (load − wind − solar) model price better than raw load? (2026-07-01)
-- Why does load-forecast **over-prediction coincide with high prices**? (seems backwards) —
-  refined 2026-07-03: concentrated at high load+price hours specifically; open hypothesis is
-  MTLF-vs-DAM timing. See [[mid-term-load-forecast]].
-- How much stronger is the load–price relationship in **summer** vs other seasons? —
-  refined 2026-07-03: strongest specifically in months 1–2 and 5–10. See [[load-and-demand]].
-- What caused the **Aug 2023** natural-gas price-correlation deviation (alongside the known
-  Feb 2021 Uri break)? See [[natural-gas-prices]].
+- **Pre-scraper checks** → `03_notebooks/00_check` (endpoint/schema review before building an extractor).
+- **Cleaning + EDA** → `03_notebooks/01_eda` (single-source: price, load, WPP, NG correlation, HDD).
+- **Analysis** → `03_notebooks/02_analysis` (multi-source: adder activation, load–price correlation, load-vs-capacity metric).
 
 ## Related
 - [[price-volatility]] · [[ordc-price-adders]] · [[rtc-b-asdc]] · [[lmp-spp]] · [[rtm-dam]]

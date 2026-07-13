@@ -4,7 +4,7 @@ type: concept
 tags: [demand, ercot]
 status: developing
 sources: 1
-updated: 2026-07-03
+updated: 2026-07-05
 ---
 
 # Load & Demand
@@ -20,8 +20,6 @@ primary fundamental pressure on prices; peaks and **net-load ramps** (load minus
 ## Threads
 - **Mid-term load forecast** and forecast error: [[mid-term-load-forecast]].
 - **Adder demand** = load forecast − actual load (from 2021). See [[feature-engineering]].
-- **Data-center growth** as a new, less weather-correlated demand source:
-  [[data-center-demand]].
 ## Findings
 - Time-series of load and RTM price tracked together; **price vs actual-load** scatter.
 - **log(price) vs load prediction error shows no strong correlation** — forecast error
@@ -33,14 +31,14 @@ primary fundamental pressure on prices; peaks and **net-load ramps** (load minus
   **months 1–2 and 5–10** (Jan–Feb, May–Oct), not just summer — narrows the monthly-slice
   claim above. Suggests **subtracting solar/wind from load** so the residual is better
   explained by [[natural-gas-prices|gas prices]]. See
-  [[analysis/2026-07-03_empirical-findings-summary]].
+  [[analysis/load-price-correlation-is-seasonal]].
 - **Total load is rising** over the study window (load vs temp, quadratic fit over years —
   see [[weather-hdd-cdd]]).
 - **Net load** (load − wind − solar) is the preferred modeling target going forward — see
   [[feature-engineering]], [[wind-power-production]].
 
 ## Related
-- [[mid-term-load-forecast]] · [[data-center-demand]] · [[weather-hdd-cdd]] · [[price-volatility]] · [[feature-engineering]] · [[wind-power-production]]
+- [[mid-term-load-forecast]] · [[weather-hdd-cdd]] · [[price-volatility]] · [[feature-engineering]] · [[wind-power-production]]
 
 ## Sources
 - [[sources/2026-06-30_data-and-eda-notes]] · [[sources/2026-07-01_research-meeting]] ·

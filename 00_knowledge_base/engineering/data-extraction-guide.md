@@ -4,7 +4,7 @@ type: engineering
 tags: [data, extraction, api, methods, reference]
 status: stable
 sources: 1
-updated: 2026-07-03
+updated: 2026-07-10
 ---
 
 # Data Extraction Guide
@@ -68,6 +68,12 @@ iterations. Read before adding a **new data source**. Full detail:
 11. **Check for by-geo report variants before building.** 5-min by-geo products are
     **NP4-743-CD** (wind) / **NP4-746-CD** (solar) — not the system-wide NP4-733/738-CD a
     keyword search surfaces first. Resolve IDs via EMIL artifact discovery, not guessing.
+12. **Manual bulk-download sources can mix hour convention mid-series.** ERCOT's 2020–2022
+    fuel-mix files (`IntGenbyFuel20YY.xlsx`) report 15-min intervals hour-**starting**; the
+    2023–2025 hourly wind/solar output files are already hour-**ending**. Concatenating
+    without shifting the older span by +1h silently misaligns two segments of the same series.
+    Check convention per file, not per dataset. See `hourly_solar_wind_generation_2021_2025.ipynb`,
+    [[ercot-data-products]].
 
 ## Timeouts (non-member, empirical)
 Connect 10 s · read 60 s (live) / 180 s (archive list) / 240 s (archive download) · sleep

@@ -22,7 +22,7 @@ The project's data plan and current empirical findings, provided as working note
 | 4 | Solar production | live API ("Solar PP by geography") | hourly | **new stream** |
 | 5 | Actual load | **NP6-346-CD** archive (2021–Nov 2023) + live API (Dec 2023–) | by forecast zone | |
 | 6 | Temperature | **GRIDMET** package | daily, per county | |
-| 7a | NG — Henry Hub | EIA `rngwhhdd` | hourly | |
+| 7a | NG — Henry Hub | EIA `rngwhhdd` | daily | corrected 2026-07-07 (was mislabeled "hourly"; raw `.xls` is a daily spot series, resampled monthly downstream) |
 | 7b | NG — Citygate (S. TX) | EIA `ng_pri_sum_dcu_stx_m` | monthly | |
 | 7c | NG — TX Electric Power Price | EIA (same as 7b) | monthly | |
 | 8 | Price adders | **NP6-793-ER** | 15-min, system-wide | field sets differ pre/post Dec 2025 |

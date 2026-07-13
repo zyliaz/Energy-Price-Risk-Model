@@ -4,7 +4,7 @@ type: concept
 tags: [pricing, ercot, core]
 status: developing
 sources: 1
-updated: 2026-06-30
+updated: 2026-07-05
 ---
 
 # LMP / SPP Decomposition
@@ -26,11 +26,6 @@ LMP             = system lambda (energy) + transmission congestion + losses
   separate** — it is co-optimized into the LMP.
 - **SPP** aggregates LMP over geography (resource node / load zone / trading hub); the
   aggregation differs by type. See [[load-zones]].
-
-## Why the system-wide vs locational split matters
-Because PA is system-wide but LMP is locational, **SPP can exceed LMP**, and PA can exceed
-SPP even when local LMP is negative (e.g. regional wind pushing local LMP < 0). Open
-hypothesis: validate the **PA > SPP / negative-LMP** cases by collecting nodal LMP data.
 
 ## Related
 - [[ordc-price-adders]] · [[rtm-dam]] · [[load-zones]] · [[natural-gas-prices]] · [[rtc-b-asdc]]

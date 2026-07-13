@@ -4,7 +4,7 @@ type: concept
 tags: [scarcity, pricing, ercot, core]
 status: developing
 sources: 3
-updated: 2026-07-03
+updated: 2026-07-05
 ---
 
 # ORDC Price Adders
@@ -46,12 +46,10 @@ tight-reserve moments (often **low [[wind-power-production|wind]] + high
   top-5-percentile tails increase **except RTRDP**, whose tail is non-monotonic.
 - **Value distribution (log scale):** larger-adder bins have lower counts; `RTRDP`'s right
   tail is tilted by **Winter Storm Uri (Feb 2021)**.
-- **PA > SPP cases:** PA can exceed SPP when local LMP < 0 (reliability-deployment
-  suppression, or regional wind) — open hypothesis, validate with nodal LMP. See [[lmp-spp]].
 
 > **(2026-07-03)** Reproduced on both schemas: pre-Dec-2025 activation/tail behavior as above,
 > and the post-Dec-2025 RTC+B/ASDC fields ([[rtc-b-asdc]]) show the same activation-by-quantile
-> pattern with no new deviation flagged. See [[analysis/2026-07-03_empirical-findings-summary]].
+> pattern with no new deviation flagged. See [[analysis/adder-activation-steepens-with-price]] and [[analysis/rtcb-activation-mirrors-ordc]].
 
 ## Related
 - [[rtc-b-asdc]] · [[lmp-spp]] · [[ancillary-services]] · [[price-volatility]] · [[energy-only-market]] · [[puct]]

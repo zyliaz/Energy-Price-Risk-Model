@@ -4,7 +4,7 @@ type: concept
 tags: [renewables, supply, ercot]
 status: developing
 sources: 0
-updated: 2026-06-30
+updated: 2026-07-10
 ---
 
 # Wind Power Production (WPP)
@@ -33,6 +33,11 @@ solar together define **net load**. Both convert to **capacity factor** as featu
 - Region → county mapping: ERCOT "Wind and Solar Regions to County Mapping.xlsx" (2024-05).
   See [[load-zones]].
 - **Action item:** run full wind & solar extraction (resolve timeout issue).
+- System-wide combined Wind+Solar hourly series (parsed 2026-07-10 from the 2026-07-06 raw
+  drop: `IntGenbyFuel20XX.xlsx` fuel-mix + Hourly Aggregated Wind/Solar Output reports) now
+  exists at `2_cleaned/generation/hourly_solar_wind_generation_2020_2025.parquet`, 2020–2026.
+  Coarser, separate granularity from the live by-geo API pipeline above — feeds the
+  load-vs-capacity metric work, not a replacement for by-geo WPP. See [[ercot-data-products]].
 
 ## Open gap
 ⚠️ The new repo has **no WPP EDA notebook** — old `05_wpp_eda` was dropped during migration,
@@ -43,4 +48,4 @@ and run; the EDA/distribution step needs to be rebuilt. See [[extraction-scripts
 - [[load-and-demand]] · [[price-volatility]] · [[ordc-price-adders]] · [[feature-engineering]] · [[load-zones]]
 
 ## Sources
-- [[sources/2026-06-30_data-and-eda-notes]] · [[sources/2026-07-01_research-meeting]]
+- [[sources/2026-06-30_data-and-eda-notes]] · [[sources/2026-07-01_research-meeting]] · [[sources/2026-07-06_weekly-meeting]]

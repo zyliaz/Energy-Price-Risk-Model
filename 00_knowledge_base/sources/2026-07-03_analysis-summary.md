@@ -44,7 +44,7 @@ Five result clusters, roughly one per notebook group:
    **~50% from 2021 to 2022**. See [[weather-hdd-cdd]].
 
 ## Insights
-See per-topic notes above; consolidated in [[analysis/2026-07-03_empirical-findings-summary]].
+See per-topic notes above; filed as one finding-named note per notebook under `analysis/`.
 
 ## Action items
 None — the note contains an instruction to file these results in the wiki (executed via
@@ -60,4 +60,4 @@ growth is now named explicitly as the structural driver behind rising CDD-side l
 ## Affected wiki pages
 [[natural-gas-prices]], [[ordc-price-adders]], [[load-and-demand]],
 [[mid-term-load-forecast]], [[weather-hdd-cdd]],
-[[analysis/2026-07-03_empirical-findings-summary]]
+[[analysis/ng-hub-correlation-breaks-uri-aug2023]], [[analysis/adder-activation-steepens-with-price]], [[analysis/rtcb-activation-mirrors-ordc]], [[analysis/load-price-correlation-is-seasonal]], [[analysis/mtlf-overpredicts-at-high-load-price]], [[analysis/cooling-demand-rising-with-population]]

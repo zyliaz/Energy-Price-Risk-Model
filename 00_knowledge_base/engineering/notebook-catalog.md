@@ -4,15 +4,19 @@ type: engineering
 tags: [methods, notebooks, reference]
 status: developing
 sources: 0
-updated: 2026-07-03
+updated: 2026-07-10
 ---
 
 # Notebook Catalog (architecture)
 
 What each **kept** notebook does and how `03_notebooks/` is organized. Companion to
 [[extraction-scripts]] (the scripts) and [[analysis-workflow]] (the pipeline). Reflects the
-18 notebooks in the new repo (old `00_emil`/`03`/`04`/`05` and 2 helper scripts dropped
-during migration, not renamed/kept; `09_mtlf_models_eda` added 2026-07-03).
+19 notebooks in the new repo (old `00_emil`/`03`/`04`/`05` and 2 helper scripts dropped
+during migration, not renamed/kept; `09_mtlf_models_eda` added 2026-07-03;
+`01_wind_solar_5min_endpoint_check` added 2026-07-03;
+`06_investigate_abnormal_pa_wip` + its output `merged_data.csv` dropped 2026-07-05 —
+not formally tested, PA>SPP claims removed from the wiki; `06_metric_nonvariable_load_capacity`
+added 2026-07-10, currently broken — see its entry).
 
 ## Grouping
 - **`00_check/`** — prelim API inspection before writing an extractor.
@@ -61,18 +65,23 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 ---
 
 ## 00_check
-### 00_emil_api_check   [check · blocked]
-- **Purpose:** ERCOT EMIL two-phase API probe — Phase 1 learn (fields/types/range), Phase 2
-  targeted extract. Only `PRODUCT` required. Run before building a new scraper.
-- **In:** Public API (live). **Out:** none. **Methods:** requests. **Wiki:** [[data-extraction-guide]]
-- Fixed 2026-07-03: `ModuleNotFoundError: dotenv` — `python-dotenv` was missing from `.venv`
-  and `requirements.txt`; installed and added (`python-dotenv>=1.0`).
-- **Last run: 2026-07-03 — FAIL (blocked, not a code bug).** Import now resolves; fails one
-  line later at `os.environ['ERCOT_USERNAME']` — there is **no `.env` file in the repo**, only
-  `.env.example`. This notebook hits the live ERCOT API and needs real credentials
-  (`ERCOT_USERNAME`/`ERCOT_PASSWORD`/`ERCOT_SUBSCRIPTION_KEY`) that only the human has —
-  cannot be resolved by re-running code. Copy `.env.example` → `.env` and fill in credentials
-  to actually verify this one end-to-end.
+### 00_endpoint_check_template   [check · template]
+- **Purpose:** Reusable ERCOT EMIL pre-scraper review template (supersedes the old
+  `00_emil_api_check`). Four phases per product list: (1) endpoint + field schema discovery,
+  including a min/max probe (sort ASC/DESC, `size=1`) on each product's range field to report
+  the actual datetime coverage window; (2) live-API history depth probe over sample dates;
+  (3) archive-API depth (oldest/newest doc via `/archive/{PRODUCT}`); (4) row-volume →
+  parquet size estimate. Ends with a human decision checklist gating extractor build.
+- **In:** Public API (live + archive). **Out:** none. **Methods:** requests. **Wiki:**
+  [[data-extraction-guide]]
+- Requires `.env` (copy from `.env.example`, fill `ERCOT_USERNAME`/`ERCOT_PASSWORD`/
+  `ERCOT_SUBSCRIPTION_KEY`) — needs real credentials only the human has.
+- Fixed 2026-07-08: Phase-1 cell existed twice — a stale draft (`ts_field` computed as a
+  list and passed straight to `sort`/`fields_df[...]` indexing, plus an unclosed f-string
+  paren) followed by the corrected version (scalar `ts_field`, empty-df guards, closing
+  paren). Deleted the stale duplicate; only the working cell remains.
+- **Last run: not yet re-run since 2026-07-08 template rewrite.** Copy this notebook per
+  new product set before writing an extractor.
 
 ### 01_wind_solar_5min_endpoint_check   [check · blocked]
 - **Purpose:** Pre-scraper review for the planned 5-min wind/solar extractors. Four phases:
@@ -82,7 +91,7 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   backfill need) gating `ercot_wpp_5min.py` / `ercot_spp_5min.py`.
 - **In:** Public API (live + archive). **Out:** none. **Methods:** requests. **Wiki:**
   [[data-extraction-guide]], [[wind-power-production]]
-- **Last run: never — blocked on the same missing `.env` as `00_emil_api_check`.** Built
+- **Last run: never — blocked on missing `.env`** (same as the template above). Built
   2026-07-03; syntax-validated only. Human must run and review before scrapers are written.
 - Carries the canonical **zone-column-name reference table** (weather/LZ/FZN/wind/solar
   spellings as they appear in parquets) for schema checks; `00_emil_api_check` points here.
@@ -145,36 +154,35 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 - **Methods:** seaborn, OLS. **Wiki:** [[rtc-b-asdc]]
 - **Last run: 2026-07-03 — PASS.**
 
-### 08_hdd_eda_wip   [eda · wip]
+### 08_hdd_eda   [eda · stable]
 - **Purpose:** Texas HDD/CDD vs load (and price) over the year.
 - **In:** `total_load.csv`, `rtm_price_aggregated.csv`, `Texas_..._daily_HDD_CDD.parquet` (2_cleaned).
 - **Out:** `Daily_HDD_rtm_load_2021_2025.csv`. **Methods:** merge, resample. **Wiki:** [[weather-hdd-cdd]]
+- Corrected 2026-07-07: on-disk filename is `08_hdd_eda.ipynb` (no `_wip` suffix); wiki
+  previously carried a stale `08_hdd_eda_wip` name/status with no corresponding file.
 - **Last run: 2026-07-03 — PASS.**
 
 ### 09_mtlf_models_eda   [eda · stable]
 - **Purpose:** Alt-forecast-model EDA (companion to `02_mtlf_eda`): the 7 extra ERCOT models
-  (A3/A6/E/E1/E2/E3/M) per zone, reduced to an **ensemble-mean feature only**. Per-model error
-  (vs actual) and ensemble spread/std/error were removed entirely (not just excluded from
-  export) per explicit human instruction — deferred until a concrete downstream use needs
-  them. **Exports are ERCOT-only, for now**; per-zone breakdown is still computed internally
-  (for validation + the daily-mean-by-zone figure) but not exported.
+  (A3/A6/E/E1/E2/E3/M) per zone, ERCOT-total only.
 - **In:** `mid_term_load_forecast_models_20220201_20251201.parquet` (1.2_raw_api). **Out:**
-  `Hourly_ERCOT_all_models_*.csv` (actual + all models, ERCOT only), `model_ensemble_features_ERCOT_*.csv`
-  (ensemble mean only, ERCOT only) + 2 daily-mean comparison figures, still computed across
-  all 9 zones internally (2_cleaned/load/forecast/models). Prior `model_error_ERCOT_*.csv`
-  and the original multi-zone `model_error_by_zone_*.csv`/`model_ensemble_features_*.csv`
-  (incl. ensemble std/error) were all deleted, not kept alongside.
-- **Methods:** duckdb, groupby, ensemble mean (per-model error/std/error calc removed).
-  **Wiki:** [[mid-term-load-forecast]], [[feature-engineering]]
+  `2_cleaned/load/forecast/Hourly_ERCOT_all_models_20220201_20251201.csv` (actual + selected +
+  all 7 alt models, ERCOT-only, hourly) — only declared output as of the current saved
+  notebook.
+- **Methods:** duckdb, groupby, null/duplicate checks, plots. **Wiki:** [[mid-term-load-forecast]]
 - Note: reads directly from `1.2_raw_api` (the parser's actual output location), unlike
   `02_mtlf_eda` which reads a `2_cleaned` copy of the base parser's output — that's a
   pre-existing path oddity in `02_mtlf_eda`, not fixed here (out of scope for this task).
-- Finding: zone-sum vs ERCOT-total validation diff is larger for the alt-model ensemble mean
-  (mean |diff| ~359 MW, max ~24,025 MW) than for `Selected` (mean ~253 MW, max ~6,790 MW) —
-  each zone's alt models are fit independently, so they're additively less consistent than
-  ERCOT's own `Selected` forecast. ~0.5-1% of system load either way; not investigated further.
-- **Last run: 2026-07-03 — PASS** (fresh `nbconvert --execute`, 0 errors, both declared outputs
-  confirmed on disk under the ERCOT-only names above).
+- ⚠️ **Drift found 2026-07-10:** an uncommitted, unlogged edit (file mtime 2026-07-09) removed
+  the ensemble-mean computation/export cell and the zone-sum-vs-ERCOT-total validation plots
+  entirely — the notebook no longer writes `model_ensemble_features_ERCOT_*.csv`, and the
+  "ensemble mean less consistent than Selected (~359 MW mean diff)" finding previously recorded
+  here is **no longer reproducible from the current code** (only markdown-docstring text still
+  claims the ensemble-mean output; the code doesn't). Removed the stale finding and file
+  reference from this entry and from [[feature-engineering]] pending human confirmation this
+  simplification (vs. an accidental partial edit) was intentional — see log.
+- **Last run: 2026-07-10 — PASS** (fresh `nbconvert --execute`, 0 errors; sole declared output
+  confirmed on disk).
 
 ## 02_analysis — multi-source interactions
 ### 00_load_forecast_rtm_correlation_wip   [analysis · wip]
@@ -210,8 +218,8 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   ~$9000/MWh), then ×100 as if already a 0–1 fraction, instead of the mean of a binary
   "was this adder active" flag. Added `{col}_active` boolean columns and rewired both tables
   to use them; rates now correctly bounded in [0,100]% (top price-quantile bin: ~85% Adder Sum
-  activation, was previously ~161,000%). ⚠️ **Not yet checked:** `03_new_pa_activation` (the
-  post-2025 counterpart) computes activation the same way and hasn't been audited for the same bug.
+  activation, was previously ~161,000%). `03_new_pa_activation` (the post-2025 counterpart)
+  was audited the same day — bug **not present** there (see its entry below).
 - **Last run: 2026-07-03 — PASS** (re-executed `--inplace`, output + scaling fix confirmed).
 
 ### 03_new_pa_activation   [analysis · stable]
@@ -255,11 +263,27 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 - **In:** `total_load.csv`, `rtm_price_aggregated.csv` (2_cleaned). **Methods:** groupby, merge, scatter. **Wiki:** [[load-and-demand]], [[price-volatility]]
 - **Last run: 2026-07-03 — PASS.**
 
-### 06_investigate_abnormal_pa_wip   [analysis · wip]
-- **Purpose:** Cases where **adders > RTM** (abnormal hours by month; RTM by LZ) — the PA-vs-SPP / negative-LMP probe.
-- **In:** adder hourly, `rtm_price_aggregated.csv`, `ercot_rtm_prices_by_settlement.csv`, `total_load.csv`.
-- **Out:** `merged_data.csv`. **Methods:** merge, groupby, scatter. **Wiki:** [[lmp-spp]], [[ordc-price-adders]]
-- **Last run: 2026-07-03 — PASS.**
+### 06_metric_nonvariable_load_capacity   [analysis · broken]
+- **Purpose:** Build the load-vs-firm-capacity price-incentive metric proposed in
+  [[sources/2026-07-06_weekly-meeting]]: `(total_load − renewable_gen) / non_re_capacity`,
+  plus exploratory RTM-price rolling-average/daily-spread metrics.
+- **In:** `2_cleaned/generation/hourly_solar_wind_generation_2020_2025.parquet`,
+  `2_cleaned/load/total_load_20201231_20260526.csv`,
+  `2_cleaned/generation/ERCOT nonRE capacity 2020-2025.csv`,
+  `2_cleaned/rtm_price/rtm_price_aggregated_2021_2025.csv`. **Out:** none currently written
+  (see below). **Methods:** duckdb (window functions). **Wiki:** [[feature-engineering]],
+  [[ercot-data-products]]
+- **Last run: 2026-07-10 — FAIL.** Fresh `nbconvert --execute`: cells 1–7 pass, including the
+  capacity-ratio metric (`df_metric`, joins gen+load+capacity on datetime/year, computes the
+  ratio cleanly). Fails at the price-metrics cell — a DuckDB window-function SQL string has an
+  incomplete `AVG(rtm_price) OVER (PARTITION BY )` clause (empty partition list) →
+  `ParserException: syntax error at or near ")"`. No output file is written by any cell in the
+  current saved notebook.
+- ⚠️ `01_data/3_analysis/price incentive metrics/merged_gen_load_price_capacity.csv` exists on
+  disk (43,294 rows, 2021-01-01–2025-12-28, columns match an earlier merge step) but predates
+  this notebook's last save by ~1h20m and no cell in the current version writes it — likely
+  output of an earlier edit of this same notebook, not reproducible from the code as saved.
+  Not deleted; flagged for human confirmation (see log).
 
 ---
 

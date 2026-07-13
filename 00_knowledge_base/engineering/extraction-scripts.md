@@ -4,7 +4,7 @@ type: engineering
 tags: [data, extraction, scripts, methods, reference]
 status: stable
 sources: 1
-updated: 2026-07-03
+updated: 2026-07-10
 ---
 
 # Extraction Scripts (architecture)
@@ -41,6 +41,7 @@ extractors share one core, `ercot_common.py` (`ERCOTAuth`, `ERCOTAPIClient`,
 | `parse_mid_term_load_forecast_models_parquet` | MTLF Metrics xlsx → parquet (all 7 alt forecast models: A3/A6/E/E1/E2/E3/M, per zone — load-prediction features, no error calc) |
 | `parse_rtm_price_adders` | Pre-2025 price adders → parquet |
 | `parse_rtm_price_adders_2025dec_2026` | Post-2025 (RTC+B) adders → parquet |
+| `hourly_solar_wind_generation_2021_2025` (notebook) | Two raw formats → one unified hourly Wind+Solar `renewable_gen` (MW) parquet, `01_data/2_cleaned/generation/hourly_solar_wind_generation_2020_2025.parquet`: (1) `IntGenbyFuel20{20,21,22}.xlsx` (15-min gen-by-fuel, one sheet/month) — filtered to Wind+Solar, melted, summed per hour, hour-starting shifted +1h to hour-ending to match the rest of the repo; (2) `..._Hourly_WindSolar_Output.xlsx` (2023–2025, already hourly hour-ending) — Wind+Solar summed directly. Concatenated 2020-01-01–2026-01-01, 52,614 rows, 0 nulls (verified 2026-07-10). |
 
 > `eia_ng_waha_download` (EIA Waha NG) **removed** — legacy, out of scope for the current
 > topic. Current NG series (Henry Hub / citygate) would be a new scraper. See [[natural-gas-prices]].

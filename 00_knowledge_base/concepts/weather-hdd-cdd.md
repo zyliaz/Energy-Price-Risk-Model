@@ -31,7 +31,7 @@ weather → [[load-and-demand]] → reserves → [[ordc-price-adders]] → [[pri
   growth is named as the first-order driver behind rising load. Temp-vs-load is
   **U-shaped**, and the cooling (CDD) side of the curve rose **~50% from 2021 to 2022**.
   HDD/CDD vs load shows a strong correlation for nonzero points. See
-  [[analysis/2026-07-03_empirical-findings-summary]].
+  [[analysis/cooling-demand-rising-with-population]].
 
 ## Related
 - [[load-and-demand]] · [[price-volatility]] · [[feature-engineering]] · [[load-zones]]
