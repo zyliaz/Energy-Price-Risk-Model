@@ -1,7 +1,7 @@
 ---
 title: Index
 type: overview
-updated: 2026-07-10
+updated: 2026-07-13
 ---
 
 # Wiki Index
@@ -30,6 +30,8 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
 - [[ancillary-services]] — reserve products; carry scarcity value under RTC+B.
 - [[energy-only-market]] — why ERCOT prices are structurally spiky.
 - [[rtm-dam]] — real-time vs day-ahead markets; DAM mechanics.
+- [[winter-storm-uri]] — Feb 13–17, 2021 storm (ERCOT emergency ~Feb 14–19); canonical
+  extreme-scarcity outlier.
 
 ## Market knowledge — drivers
 - [[load-and-demand]] — total/zonal demand and net-load ramps.

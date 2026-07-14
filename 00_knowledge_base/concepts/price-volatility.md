@@ -38,6 +38,8 @@ Plus the project's mechanism-level drivers:
 - Distinguish *fundamental* volatility (smooth load/fuel) from *scarcity* volatility
   (adder-driven jumps); the thesis is that the latter dominates. See [[00_overview]].
 - **Regime break Dec 2025** (RTC+B): treat pre/post separately. See [[rtc-b-asdc]].
+- **Extreme outlier Feb 2021**: [[winter-storm-uri]] dominates the right tail of any
+  pre-2025 volatility measure; handle explicitly.
 
 ## Related
 - [[ordc-price-adders]] · [[rtm-dam]] · [[load-and-demand]] · [[wind-power-production]] · [[lmp-spp]] · [[rtc-b-asdc]]

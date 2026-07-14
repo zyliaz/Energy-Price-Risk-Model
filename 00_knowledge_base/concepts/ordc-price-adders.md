@@ -45,7 +45,7 @@ tight-reserve moments (often **low [[wind-power-production|wind]] + high
 - Adder **activation (Boolean) by RTM price quantile** steepens sharply at higher quantiles;
   top-5-percentile tails increase **except RTRDP**, whose tail is non-monotonic.
 - **Value distribution (log scale):** larger-adder bins have lower counts; `RTRDP`'s right
-  tail is tilted by **Winter Storm Uri (Feb 2021)**.
+  tail is tilted by **[[winter-storm-uri|Winter Storm Uri]] (Feb 2021)**.
 
 > **(2026-07-03)** Reproduced on both schemas: pre-Dec-2025 activation/tail behavior as above,
 > and the post-Dec-2025 RTC+B/ASDC fields ([[rtc-b-asdc]]) show the same activation-by-quantile

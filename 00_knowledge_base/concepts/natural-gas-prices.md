@@ -21,7 +21,7 @@ scarcity) driver of [[price-volatility]].
 
 ## Findings
 - TX power-producer, citygate, and Henry Hub prices are **strongly correlated monthly
-  except for extreme deviations** — most notably **Feb 2021 (Winter Storm Uri)**, which
+  except for extreme deviations** — most notably **Feb 2021 ([[winter-storm-uri|Winter Storm Uri]])**, which
   is itself a major source of ERCOT risk and volatility.
 - **(2026-07-03)** A second deviation month is now flagged: **2023-08**. No ERCOT-specific
   event is logged in the wiki explaining it yet. See
