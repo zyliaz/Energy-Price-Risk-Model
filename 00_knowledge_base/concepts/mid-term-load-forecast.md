@@ -4,7 +4,7 @@ type: concept
 tags: [demand, forecast, ercot]
 status: developing
 sources: 4
-updated: 2026-07-10
+updated: 2026-07-17
 ---
 
 # Mid-Term Load Forecast (MTLF)
@@ -36,13 +36,17 @@ ensemble/error feature is currently computed — an ensemble-mean feature and a 
 ERCOT-total validation finding existed briefly (2026-07-03–07-08) but were removed in an
 uncommitted 2026-07-09 edit; see [[notebook-catalog]] drift note.
 
-**Planned: short-horizon forecast product (2026-07-07).** ERCOT's live **Seven-Day Load
-Forecast by Model and Weather Zone (NP3-565-CD)** publishes hourly per-model predictions from
-the current day out 7 days, one report per hour. Decision: extract the 3-hour, 6-hour, and
-day-ahead predictions specifically and recreate the forecast-error-vs-actual-load scatter at
-those horizons (mirrors the existing MTLF-error work but at shorter, fixed lead times). Not
-yet built — tracked as a Notion to-do ("real time load prediction 3, 6 hours + day ahead
-pipeline"). See [[sources/2026-07-07_research-update]], [[ercot-data-products]].
+**Short-horizon forecast product — extractor built (2026-07-07 planned → 2026-07-14 built).**
+ERCOT's live **Seven-Day Load Forecast by Model and Weather Zone (NP3-565-CD)** publishes
+hourly per-model predictions from the current day out 7 days, one report per hour. Decision:
+extract the 3-hour, 6-hour, and day-ahead predictions specifically and recreate the
+forecast-error-vs-actual-load scatter at those horizons (mirrors the existing MTLF-error work
+but at shorter, fixed lead times). A new scraper, `ercot_mtlf_day_ahead.py`, now exists
+(`02_scripts/1_scrapers/`) — pulls, per operating day D, the last qualifying (in-use-model)
+forecast posted on D-1 before the 10:00 CT DAM close. A trial pull (`--trial-only`) has been
+run (`mtlf_day_ahead_trial.csv`); the full extract (`--auto`) has not. Not yet parsed/cleaned
+or used in any EDA/analysis notebook. See [[extraction-scripts]],
+[[sources/2026-07-07_research-update]], [[ercot-data-products]].
 
 ## Findings
 - **log(price) vs load prediction error: no strong correlation** — forecast error alone is

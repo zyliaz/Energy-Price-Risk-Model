@@ -1,7 +1,7 @@
 ---
 title: Index
 type: overview
-updated: 2026-07-13
+updated: 2026-07-17
 ---
 
 # Wiki Index
@@ -46,18 +46,27 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
 ## Engineering (pipeline & methods, in `engineering/`)
 - [[new-source-checklist]] — compressed copy-paste todo for adding a data source.
 - [[data-extraction-guide]] — API auth, endpoints, pitfalls, timeouts, EMIL, jobs convention.
-- [[extraction-scripts]] — script architecture: 6 API extractors vs excel→parquet parsers.
+- [[extraction-scripts]] — script architecture: 7 API extractors (incl. new
+  `ercot_mtlf_day_ahead`, 2026-07-14) vs excel→parquet parsers.
 - [[analysis-workflow]] — 5-step raw→cleaned→analysis pipeline mapped to the repo + lineage.
-- [[feature-engineering]] — adder demand, CDD/HDD, capacity factor, net load.
-- [[notebook-catalog]] — architecture of the 19 kept notebooks (I/O, patterns) + template.
-  Also tracks 3 open gaps: no WPP EDA, no RTM-vs-DAM comparison, no node→zone cleaning
-  notebook (all dropped, not renamed, during the old→new repo migration). Every entry now
-  carries a `Last run` execution stamp. `00_emil_api_check` deleted 2026-07-08, superseded by
-  `00_endpoint_check_template` (not yet re-run since its 2026-07-08 rewrite). New 2026-07-03:
-  `09_mtlf_models_eda`, alt-forecast-model EDA (ensemble-mean feature added 07-03, removed in
-  an uncommitted 07-09 edit — see catalog drift note). New 2026-07-10:
-  `06_metric_nonvariable_load_capacity` (load-vs-firm-capacity price-incentive metric) —
-  currently **broken** (incomplete SQL in its price-metrics cell).
+- [[feature-engineering]] — adder demand, CDD/HDD, capacity factor, net load, spare-capacity ratio.
+- [[notebook-catalog]] — architecture of the 19 kept `00_check`/`01_eda`/`02_analysis`
+  notebooks (I/O, patterns) + template, plus `03_model/01_regression.ipynb` — the first
+  notebook in a new, adopted (2026-07-17) 4th grouping for modeling. Tracks 3 open gaps: no
+  WPP EDA, no RTM-vs-DAM comparison,
+  no node→zone cleaning notebook (all dropped, not renamed, during the old→new repo
+  migration). Every entry carries a `Last run` execution stamp. `00_emil_api_check` deleted
+  2026-07-08, superseded by `00_endpoint_check_template` (not yet re-run since its 2026-07-08
+  rewrite). `09_mtlf_models_eda` (alt-forecast-model EDA, added 2026-07-03): ensemble-mean
+  feature added 07-03, removed in an uncommitted 07-09 edit. **2026-07-14:**
+  `06_metric_nonvariable_load_capacity` (broken) deleted, replaced by `06_spare_capacity`
+  (passing) — see [[analysis/spare-capacity-correlates-with-rtm-price]].
+  **2026-07-17:** `00_load_forecast_rtm_correlation_wip` found broken (dropped `set_index`
+  call), **fixed same day** — passing again. `03_ng_price_correlation`'s Henry-Hub
+  date-windowing bug fixed same day, but the Aug-2023 NG-deviation finding still doesn't
+  reproduce for an unrelated reason — see [[natural-gas-prices]]. `03_model/01_regression`
+  had its Random Forest cell removed (fixed the metric bug) but the edit also removed the
+  OLS/linear-regression cells — now a dataset-export step only, no model fit.
 
 ## Sources
 - [[sources/2026-06-30_ercot-market-concepts]] — pricing mechanics (ORDC/ASDC, LMP/SPP, ancillary).
@@ -72,6 +81,10 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
 - [[sources/2026-07-07_research-update]] — progress note: MTLF model-heading question
   answered, NP3-565-CD + PG7-126-M report IDs identified, non-renewable-capacity coverage
   caveat (~25% thermal capacity excluded).
+- [[sources/2026-07-13_weekly-meeting-spare-capacity]] — spare-capacity metric
+  `(load−renewable_gen)/non_re_capacity` proposed, correlates strongly with `log(price)`.
+- [[sources/2026-07-14_capacity-model-research-update]] — regression modeling plan for the
+  spare-capacity metric (year + season + spare_capacity + ng_price + degree_days).
 
 ## Analysis (filed findings — one note per notebook, named by finding)
 - [[analysis/ng-hub-correlation-breaks-uri-aug2023]] — NG benchmarks track monthly except
@@ -86,3 +99,7 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
   over-predicts at high load + high price. (`00_load_forecast_rtm_correlation_wip`)
 - [[analysis/cooling-demand-rising-with-population]] — U-shaped temp–load; CDD side rose
   ~50% 2021→2022 with population. (`08_hdd_eda`)
+- [[analysis/spare-capacity-correlates-with-rtm-price]] — `(load−renewable_gen)/
+  non_re_capacity` correlates strongly with `log(rtm_price)`; OLS R²=0.552 with NG price +
+  degree-days added (regression notebook uncommitted, cached results only).
+  (`06_spare_capacity`, `03_model/01_regression`)

@@ -4,19 +4,23 @@ type: engineering
 tags: [methods, notebooks, reference]
 status: developing
 sources: 0
-updated: 2026-07-10
+updated: 2026-07-17
 ---
 
 # Notebook Catalog (architecture)
 
 What each **kept** notebook does and how `03_notebooks/` is organized. Companion to
 [[extraction-scripts]] (the scripts) and [[analysis-workflow]] (the pipeline). Reflects the
-19 notebooks in the new repo (old `00_emil`/`03`/`04`/`05` and 2 helper scripts dropped
-during migration, not renamed/kept; `09_mtlf_models_eda` added 2026-07-03;
+19 notebooks in `00_check`/`01_eda`/`02_analysis` (old `00_emil`/`03`/`04`/`05` and 2 helper
+scripts dropped during migration, not renamed/kept; `09_mtlf_models_eda` added 2026-07-03;
 `01_wind_solar_5min_endpoint_check` added 2026-07-03;
 `06_investigate_abnormal_pa_wip` + its output `merged_data.csv` dropped 2026-07-05 —
 not formally tested, PA>SPP claims removed from the wiki; `06_metric_nonvariable_load_capacity`
-added 2026-07-10, currently broken — see its entry).
+added 2026-07-10 then **deleted 2026-07-14** (commit `eace499`), replaced by
+`06_metric_nonvariable_load_capacity` → `06_spare_capacity` — same slot, renamed, rewritten,
+now passing — see its entry). A 4th grouping, `03_model/`, was adopted into CLAUDE.md §2 on
+2026-07-17 (human confirmed) for statistical/ML modeling on top of `02_analysis` outputs; its
+first notebook, `01_regression.ipynb`, is cataloged in its own section below.
 
 ## Grouping
 - **`00_check/`** — prelim API inspection before writing an extractor.
@@ -119,11 +123,27 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 ### 03_ng_price_correlation   [eda · stable]
 - **Purpose:** NG-internal correlation (Henry Hub / citygate / electric-power), monthly.
 - **In:** raw NG `.xls` (Henry Hub, citygate, electric power), `1.3_raw_other/ng_price/`.
-  **Out:** `ng_prices_monthly.csv` → `3_analysis/ng_price/`.
+  **Out:** `ng_prices_monthly.csv` → `3_analysis/ng_price/`; **new (2026-07-17,
+  uncommitted):** `henry hub ng price.csv` → new `2_cleaned/ng_price/` (`MID_DIR`).
 - **Methods:** resample, scatter_corr (pearson/spearman/kendall). **Wiki:** [[natural-gas-prices]]
 - Fixed 2026-07-02: raw NG `.xls` copied into `1.3_raw_other/ng_price/`; output repointed from
   the raw dir to `3_analysis/ng_price/` (`OUT_DIR` added) so `01_ng_rtm_price_correlation` finds it.
-- **Last run: 2026-07-03 — PASS.**
+- ✅ **Fixed 2026-07-17 (human):** the Henry-Hub date-windowing found earlier the same session
+  (`henry_hub` sliced to 2021-2025) has been reverted — Henry Hub is back to using its full
+  raw range. A separate, genuine bug was fixed alongside it: the `ng_price_timeseries.png`
+  "Saved →" message pointed at a stale path from the old repo
+  (`.../RESEARCH-PJM-ERCOT-Price-Volatility/...`), now correctly resolves under
+  `01_data/3_analysis/ng_price/`.
+- ⚠️ **Independent of the windowing fix — still open:** re-running with the full range
+  restored (`merged`: 2002-2026, 289 months) **still does not reproduce the 2023-08 NG
+  deviation** recorded in [[natural-gas-prices]] / [[analysis/ng-hub-correlation-breaks-uri-aug2023]]
+  (only 2021-02/Uri flags for citygate; 2021-02 + 2021-12 for elec-power). So the Aug-2023
+  finding's non-reproducibility was **not** caused by the windowing bug — the fixed-coefficient
+  outlier rule (`citygate >= 2*0.84*henry_hub + 1.72`, `elec_pwr >= 2*0.94*henry_hub + 0.48`)
+  simply doesn't flag that month under either window. Contradiction left open; see
+  [[natural-gas-prices]].
+- **Last run: 2026-07-17 — PASS** (fresh `nbconvert --execute`, 0 errors, after the human's
+  fix; full 2002-2026 range confirmed).
 
 ### 04_price_adders_pre2025_cleaning   [eda · stable]
 - **Purpose:** Clean pre-2025 adders → 15-min, hourly, and binary-activation series.
@@ -186,10 +206,17 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 
 ## 02_analysis — multi-source interactions
 ### 00_load_forecast_rtm_correlation_wip   [analysis · wip]
-- **Purpose:** Load-forecast error vs RTM price. Finding: **log(price) vs forecast error → weak**.
+- **Purpose:** Load-forecast error vs RTM price. Finding: **log(price) vs forecast error →
+  weak**.
 - **In:** `Hourly ERCOT system load and prediction.csv`, `rtm_price_aggregated.csv`.
 - **Methods:** merge, resample, scatter. **Wiki:** [[mid-term-load-forecast]], [[load-and-demand]]
-- **Last run: 2026-07-03 — PASS.**
+- ⚠️→✅ **Regression found and fixed 2026-07-17:** a 2026-07-14 edit (commit `eace499`)
+  had dropped `df.set_index('datetime', inplace=True)`, leaving `df` with a plain `RangeIndex`
+  (columns `avg_rtm_price, datetime, actual_load, load_forecast_error, abs_load_error`); a
+  later cell facetted plots by `df.index.year`, which raised `AttributeError`. **Fixed by the
+  human same-day**: the year-facet cell now reads `df['datetime'].dt.year` directly instead of
+  `df.index.year` (keeps `datetime` as a column rather than restoring the index).
+- **Last run: 2026-07-17 — PASS** (fresh `nbconvert --execute`, 0 errors, after the fix).
 
 ### 01_ng_rtm_price_correlation   [analysis · stable]
 - **Purpose:** NG vs RTM price, incl. dedicated **Feb-2021 (Uri)** analysis.
@@ -263,27 +290,66 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 - **In:** `total_load.csv`, `rtm_price_aggregated.csv` (2_cleaned). **Methods:** groupby, merge, scatter. **Wiki:** [[load-and-demand]], [[price-volatility]]
 - **Last run: 2026-07-03 — PASS.**
 
-### 06_metric_nonvariable_load_capacity   [analysis · broken]
-- **Purpose:** Build the load-vs-firm-capacity price-incentive metric proposed in
-  [[sources/2026-07-06_weekly-meeting]]: `(total_load − renewable_gen) / non_re_capacity`,
-  plus exploratory RTM-price rolling-average/daily-spread metrics.
+### 06_spare_capacity   [analysis · stable]
+- **Purpose:** Replaces `06_metric_nonvariable_load_capacity` (deleted 2026-07-14, commit
+  `eace499`; same catalog slot). Builds the same load-vs-firm-capacity metric — renamed
+  `spare_capacity` / `metric1` = `(total_load − renewable_gen) / non_re_capacity` — proposed
+  in [[sources/2026-07-06_weekly-meeting]] and refined in
+  [[sources/2026-07-13_weekly-meeting-spare-capacity]], then plots it against
+  `log(rtm_price)`: LOWESS fit faceted by year (Uri points excluded), scatter faceted by year,
+  monthly time series, and scatter color-coded by natural-gas price (log) and by degree days.
 - **In:** `2_cleaned/generation/hourly_solar_wind_generation_2020_2025.parquet`,
   `2_cleaned/load/total_load_20201231_20260526.csv`,
   `2_cleaned/generation/ERCOT nonRE capacity 2020-2025.csv`,
-  `2_cleaned/rtm_price/rtm_price_aggregated_2021_2025.csv`. **Out:** none currently written
-  (see below). **Methods:** duckdb (window functions). **Wiki:** [[feature-engineering]],
-  [[ercot-data-products]]
-- **Last run: 2026-07-10 — FAIL.** Fresh `nbconvert --execute`: cells 1–7 pass, including the
-  capacity-ratio metric (`df_metric`, joins gen+load+capacity on datetime/year, computes the
-  ratio cleanly). Fails at the price-metrics cell — a DuckDB window-function SQL string has an
-  incomplete `AVG(rtm_price) OVER (PARTITION BY )` clause (empty partition list) →
-  `ParserException: syntax error at or near ")"`. No output file is written by any cell in the
-  current saved notebook.
-- ⚠️ `01_data/3_analysis/price incentive metrics/merged_gen_load_price_capacity.csv` exists on
-  disk (43,294 rows, 2021-01-01–2025-12-28, columns match an earlier merge step) but predates
-  this notebook's last save by ~1h20m and no cell in the current version writes it — likely
-  output of an earlier edit of this same notebook, not reproducible from the code as saved.
-  Not deleted; flagged for human confirmation (see log).
+  `2_cleaned/rtm_price/rtm_price_aggregated_2021_2025.csv`,
+  `3_analysis/ng_price/ng_prices_monthly.csv`,
+  `2_cleaned/weather/Texas daily average temp HDD CDD 2020-2025.csv`. **Out:** none written
+  (pure EDA/plotting notebook — no `.to_csv`/`.to_parquet` calls). **Methods:** duckdb (window
+  functions), statsmodels LOWESS. **Wiki:** [[feature-engineering]],
+  [[analysis/spare-capacity-correlates-with-rtm-price]]
+- Fixes the bug that killed the old notebook: the incomplete
+  `AVG(...) OVER (PARTITION BY )` window-function SQL is gone from this rewrite.
+- ⚠️ `01_data/3_analysis/price incentive metrics/merged_gen_load_price_capacity.csv` — the
+  leftover file flagged 2026-07-10 as unreproducible from any cell in the deleted notebook —
+  is still on disk, still not written by anything in `06_spare_capacity` either. Still not
+  deleted; still flagged, now against this notebook instead.
+- **Last run: 2026-07-17 — PASS** (fresh `nbconvert --execute`, 0 errors, after installing the
+  missing `statsmodels` dependency in the sandbox).
+- Finding filed: [[analysis/spare-capacity-correlates-with-rtm-price]].
+
+## 03_model — modeling on top of 02_analysis outputs
+### 01_regression.ipynb   [model · wip]
+- **Purpose (as of 2026-07-17, human edit):** the human removed the Random Forest cell as
+  requested — but in doing so also removed **all** modeling cells (OLS via statsmodels,
+  sklearn `LinearRegression`, and the Random Forest section), not just the broken one. The
+  notebook, now titled "linear regression model dataset" (5 cells), currently only **builds
+  and exports the merged modeling dataset** — it does not fit any model. Flagged in the log
+  in case this wasn't the intent (vs. splitting dataset-prep from modeling into separate
+  notebooks going forward).
+- **In:** `2_cleaned/generation/hourly_solar_wind_generation_2020_2025.parquet`,
+  `2_cleaned/load/total_load_20201231_20260526.csv`,
+  `2_cleaned/generation/ERCOT nonRE capacity 2020-2025.csv`,
+  `2_cleaned/rtm_price/rtm_price_aggregated_2021_2025.csv`,
+  `3_analysis/ng_price/ng_prices_monthly.csv`,
+  `2_cleaned/weather/Texas daily average temp HDD CDD 2020-2025.csv`. **Out:**
+  `01_data/4_model/ercot_regression_model_dataset.csv` (columns: `datetime, year, season,
+  rtm_price, spare_capacity, ng_price, degree_days`; Uri window `2021-02-13`–`2021-02-25`
+  excluded via the SQL `WHERE` clause). **Methods:** duckdb merge only (no modeling methods
+  remain in this notebook). **Wiki:** [[feature-engineering]],
+  [[analysis/spare-capacity-correlates-with-rtm-price]]
+- Historical modeling results (from the version of this notebook that existed earlier
+  2026-07-17, before the human's edit — **no longer reproducible from the current code**,
+  kept here for provenance only): OLS R²=0.552, `spare_capacity` coef ≈+115 (p<0.001),
+  `ng_price` coef ≈+6.3 (p<0.001), `degree_days` coef ≈−0.44 (p<0.001), `year` not
+  significant; sklearn `LinearRegression` R²=0.40; Random Forest failed
+  (`ValueError: continuous is not supported`, `accuracy_score` used on a continuous target).
+- **Last run: could not fully verify 2026-07-17.** `OUT_DIR.mkdir()` (no `exist_ok=True`)
+  fails on any re-run once `01_data/4_model/` exists, which it already does; the sandbox's
+  file-write protections wouldn't allow clearing that directory to force a clean run. The
+  4 remaining cells (imports/paths, load, duckdb merge, CSV write) are logically identical to
+  cells that already passed a fresh `nbconvert --execute` earlier the same session as part of
+  the fuller notebook — circumstantial evidence they'd still pass — but per the status-label
+  rule this is **not** promoted to `stable` without an actual fresh run. Marked `wip`.
 
 ---
 

@@ -6,3 +6,7 @@ matplotlib>=3.7
 jupyter>=1.0
 ipykernel>=6.0
 python-dotenv>=1.0
+cdsapi>=0.7
+geopandas>=1.0
+xarray>=2024.0
+netCDF4>=1.6

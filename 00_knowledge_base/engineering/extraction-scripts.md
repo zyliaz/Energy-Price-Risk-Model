@@ -4,7 +4,7 @@ type: engineering
 tags: [data, extraction, scripts, methods, reference]
 status: stable
 sources: 1
-updated: 2026-07-10
+updated: 2026-07-17
 ---
 
 # Extraction Scripts (architecture)
@@ -25,11 +25,16 @@ extractors share one core, `ercot_common.py` (`ERCOTAuth`, `ERCOTAPIClient`,
 | `ercot_load_archive` | Load (backfill / cross-check) | archive 2021–2023 | list docIds → batch download |
 | `ercot_wpp_archive` | Wind (backfill / cross-check) | archive 2021–2023 | list docIds → batch download |
 | *`ercot_lmp_archive`* | *LMP backfill (NP6-788-CD)* | *archive 2021–2023* | *list+download* |
+| `ercot_mtlf_day_ahead` | Seven-Day Load Forecast, day-ahead slice (NP3-565-CD) | live | per-operating-day: keep the last in-use-model posting before the 10:00 CT DAM close |
 
-> The canonical set is **6 extractors** (3 live + 3 archive). `ercot_lmp_archive` is **not
-> copied into this repo** — NP6-788-CD nodal LMP was scoped out earlier. Add it if the
-> PA-vs-SPP nodal validation ([[lmp-spp]]) goes ahead. **No solar archive exists** — the
-> live solar endpoint already reaches 2021.
+> The canonical set was **6 extractors** (3 live + 3 archive); a 7th, `ercot_mtlf_day_ahead`,
+> was added 2026-07-14 (new, uncommitted as of 2026-07-17) for the NP3-565-CD short-horizon
+> forecast product tracked in [[mid-term-load-forecast]]. It shares `ercot_common.py`
+> (auth/pagination/writer) like the others; supports `--discover`, `--trial-only`, `--auto`.
+> A trial pull exists (`01_data/1.2_raw_api/mtlf_day_ahead_trial.csv`); the full extract has
+> not been run. `ercot_lmp_archive` is still **not copied into this repo** — NP6-788-CD nodal
+> LMP was scoped out earlier. Add it if the PA-vs-SPP nodal validation ([[lmp-spp]]) goes
+> ahead. **No solar archive exists** — the live solar endpoint already reaches 2021.
 
 **2) Excel→parquet parsers → `02_scripts/2_parsers/`** (no network; consolidate local files)
 

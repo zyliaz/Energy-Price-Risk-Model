@@ -3,7 +3,7 @@ title: Overview & Thesis — Drivers of ERCOT Price Volatility
 type: overview
 tags: [ercot, price-volatility, thesis]
 status: developing
-updated: 2026-07-10
+updated: 2026-07-17
 ---
 
 # Drivers of ERCOT Price Volatility
@@ -43,6 +43,19 @@ concentrated in scarcity/extreme conditions. See [[natural-gas-prices]].
 > ⚠️ **Regime break Dec 2025:** ORDC adders → co-optimized [[rtc-b-asdc|RTC+B/ASDC]].
 > Analyze pre/post-Dec-2025 as separate regimes (price formation + data schema both change).
 
+**New quantitative support (2026-07-14):** a "spare capacity" metric —
+`(load − renewable_gen) / non_re_capacity`, i.e. how hard load is squeezing non-renewable
+firm capacity net of renewables — correlates strongly with `log(price)` (Uri excluded) and,
+combined with natural-gas price and degree-days in an OLS regression, explains a majority of
+RTM price variance (R²=0.552; spare-capacity and NG-price coefficients both significant,
+p<0.001). This is the most direct evidence so far that tightening capacity margins, not
+smooth fundamentals, drive price levels — see
+[[analysis/spare-capacity-correlates-with-rtm-price]], [[feature-engineering]]. The
+regression itself (`03_notebooks/03_model/01_regression.ipynb`) was edited 2026-07-17 to
+remove its modeling cells (now a dataset-export step only, pending the next modeling pass) —
+treat the R² and coefficients as historical/provisional, not currently reproducible from the
+notebook as saved. See [[notebook-catalog]].
+
 ## Direction (2026-07-01 advisor meeting)
 - **Stats model first**, aimed at **scenario identification**.
 - Preferred modeling target is **net load = load − wind − solar**, not raw load. A combined
@@ -62,7 +75,10 @@ note for why the topic narrowed.
 ## How the analysis is structured
 - **Pre-scraper checks** → `03_notebooks/00_check` (endpoint/schema review before building an extractor).
 - **Cleaning + EDA** → `03_notebooks/01_eda` (single-source: price, load, WPP, NG correlation, HDD).
-- **Analysis** → `03_notebooks/02_analysis` (multi-source: adder activation, load–price correlation, load-vs-capacity metric).
+- **Analysis** → `03_notebooks/02_analysis` (multi-source: adder activation, load–price correlation, spare-capacity metric).
+- **Modeling** → `03_notebooks/03_model` (added 2026-07-14, adopted into CLAUDE.md §2
+  2026-07-17: statistical/ML modeling on top of `02_analysis` outputs, e.g. regressing RTM
+  price on the spare-capacity metric).
 
 ## Related
 - [[price-volatility]] · [[ordc-price-adders]] · [[rtc-b-asdc]] · [[lmp-spp]] · [[rtm-dam]]
@@ -71,4 +87,5 @@ note for why the topic narrowed.
 
 ## Sources
 - [[sources/2026-06-30_ercot-market-concepts]] · [[sources/2026-06-30_data-and-eda-notes]] ·
-  [[sources/2026-07-03_analysis-summary]]
+  [[sources/2026-07-03_analysis-summary]] · [[sources/2026-07-13_weekly-meeting-spare-capacity]] ·
+  [[sources/2026-07-14_capacity-model-research-update]]

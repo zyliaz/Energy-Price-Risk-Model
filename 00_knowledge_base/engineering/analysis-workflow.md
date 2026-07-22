@@ -4,7 +4,7 @@ type: engineering
 tags: [methods, workflow, pipeline, reference]
 status: stable
 sources: 1
-updated: 2026-06-30
+updated: 2026-07-17
 ---
 
 # Analysis Workflow
@@ -24,6 +24,11 @@ duplicated here). This page covers the *why*: the layering rule and how files re
   hourly, nodes → zone, value → binary activation flag). One source in, one source out.
 - **`3_analysis`** — csv that **merges multiple sources** for a relationship/finding. Figures
   may live here or stay in the old repo (project convention).
+- **`4_model`** (added 2026-07-14, adopted 2026-07-17) — modeling-ready datasets exported from
+  `03_notebooks/03_model` (regression/ML inputs, one step past `3_analysis`). Populated by
+  `01_regression.ipynb` → `ercot_regression_model_dataset.csv`. Note: that notebook's
+  `OUT_DIR.mkdir()` call is not idempotent (no `exist_ok=True`) — re-running it after the
+  directory already exists fails; not yet fixed.
 
 See [[data-extraction-guide]] for step-1/2 mechanics. Feature definitions: [[feature-engineering]].
 Quick copy-paste version: [[new-source-checklist]].
@@ -40,7 +45,10 @@ GRIDMET temp ─────► Texas_..._daily_HDD_CDD.parquet ─────�
 ```
 Examples of step-5 merges: adder × RTM price quantile ([[ordc-price-adders]]); load × RTM
 price ([[load-and-demand]]); NG × RTM ([[natural-gas-prices]]); forecast error × price
-([[mid-term-load-forecast]]). Notebook-by-notebook: [[notebook-catalog]].
+([[mid-term-load-forecast]]); spare-capacity (load, renewable gen, non-RE capacity) × RTM
+price × NG price × degree-days ([[analysis/spare-capacity-correlates-with-rtm-price]]).
+Notebook-by-notebook: [[notebook-catalog]].
+
 
 ## Conventions
 - **Trial before full extract** (step 1) validates auth/params cheaply — see [[data-extraction-guide]].

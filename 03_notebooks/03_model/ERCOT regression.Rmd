@@ -1,0 +1,57 @@
+---
+title: "ERCOT Power Prices"
+output: html_document
+date: "2026-07-17"
+---
+
+```{r}
+library(readr)
+library(dplyr)
+library(corrplot)
+library(car)
+```
+```{r}
+df <- read_csv("../../01_data/4_model/ercot_regression_model_dataset.csv", col_types = cols(datetime = col_skip(), year = col_character()))
+head(df)
+```
+
+```{r}
+# set season and year as categorical variables
+df$season <- as.factor(df$season)
+df$year   <- as.factor(df$year)
+df$time_of_day   <- as.factor(df$time_of_day)
+summary(df)
+```
+```{r}
+# check correlation among numerical variables
+
+cor_matrix <- cor(df %>% select(where(is.numeric)), use = "complete.obs")
+print(cor_matrix)
+
+corrplot(cor_matrix, method ="circle", addCoef.col=TRUE )
+
+```
+```{r}
+cor_by_year <- df %>%
+  group_by(year) %>%
+  group_split() %>%
+  setNames(unique(df$year)) %>%
+  lapply(function(x) {
+    x %>% select(where(is.numeric)) %>% cor(method = "pearson")
+  })
+cor_by_year
+```
+
+
+```{r}
+mod1 <- lm(rtm_price ~ spare_capacity + ng_price + degree_days + factor(year) + factor(season) + time_of_day, df)
+summary(mod1)
+plot(mod1)
+```
+
+```{r}
+# test for multicollinearity
+library(car)
+vif(mod1)
+```
+

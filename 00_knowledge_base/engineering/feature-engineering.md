@@ -3,8 +3,8 @@ title: Feature Engineering
 type: engineering
 tags: [methods, features]
 status: developing
-sources: 1
-updated: 2026-07-10
+sources: 3
+updated: 2026-07-17
 ---
 
 # Feature Engineering
@@ -29,16 +29,25 @@ consistent.
   selected + all 7 models, no derived feature). An ensemble-mean feature was computed briefly
   (2026-07-03–07-08) then removed in an uncommitted 2026-07-09 edit — see [[notebook-catalog]]
   drift note. Not currently used downstream in any `02_analysis` notebook.
-- **Load-vs-firm-capacity ratio (in development, 2026-07-10):** `(load − renewable_gen) /
+- **Spare-capacity ratio (`spare_capacity`, resolved 2026-07-17):** `(load − renewable_gen) /
   non_re_capacity`, proposed in [[sources/2026-07-06_weekly-meeting]] as a stakeholder price-
-  incentive metric. Computed in `06_metric_nonvariable_load_capacity` — the ratio cell itself
-  runs clean; the notebook is not yet stable end-to-end (see [[notebook-catalog]]). No finding
-  filed yet — WIP. ⚠️ Caveat (2026-07-07): `non_re_capacity` covers gas-CC + gas-other only —
-  coal/nuclear/diesel (~25% of thermal capacity) are excluded, so the ratio undercounts total
-  firm capacity. See [[sources/2026-07-07_research-update]].
+  incentive metric, refined in [[sources/2026-07-13_weekly-meeting-spare-capacity]]. Renamed
+  from the earlier "load-vs-firm-capacity ratio" WIP entry. Computed cleanly (Uri excluded) in
+  `06_spare_capacity` (replaces the deleted, broken `06_metric_nonvariable_load_capacity` —
+  see [[notebook-catalog]]) and **correlates strongly with `log(rtm_price)`** — a prior OLS
+  fit combining it with `ng_price` and `degree_days` gave R²=0.552, but the modeling cells
+  were since removed from `03_notebooks/03_model/01_regression.ipynb` (now a dataset-export
+  step only) — treat that R² as historical, not currently reproducible. Finding filed:
+  [[analysis/spare-capacity-correlates-with-rtm-price]]. ⚠️ Caveat (2026-07-07, still open):
+  `non_re_capacity` covers gas-CC + gas-other only — coal/nuclear/diesel (~25% of thermal
+  capacity) are excluded, so the ratio undercounts total firm capacity. See
+  [[sources/2026-07-07_research-update]].
 
 ## Related
 - [[load-and-demand]] · [[weather-hdd-cdd]] · [[wind-power-production]] · [[price-volatility]]
+- [[analysis/spare-capacity-correlates-with-rtm-price]] · [[notebook-catalog]]
 
 ## Sources
-- [[sources/2026-07-01_research-meeting]] · [[sources/2026-07-07_research-update]]
+- [[sources/2026-07-01_research-meeting]] · [[sources/2026-07-07_research-update]] ·
+  [[sources/2026-07-13_weekly-meeting-spare-capacity]] ·
+  [[sources/2026-07-14_capacity-model-research-update]]

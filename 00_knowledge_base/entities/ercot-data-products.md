@@ -4,7 +4,7 @@ type: entity
 tags: [data-source, api, ercot]
 status: developing
 sources: 0
-updated: 2026-07-10
+updated: 2026-07-17
 ---
 
 # ERCOT Data Products
@@ -25,7 +25,7 @@ Reference for the ERCOT datasets feeding this project and where they come from.
 | Price adders             | Reserve/adder prices               | **NP6-793-ER**                                                | 15-min, system-wide                                                   | `parse_rtm_price_adders*.py`                          |
 | Renewable generation (wind+solar) | Combined hourly Wind+Solar output | manual bulk download: `IntGenbyFuel20{20-22}.xlsx` (fuel mix, 15-min) + **PG7-126-M** "Hourly Aggregated Wind and Solar Output" (2023–2025 portion; report ID confirmed 2026-07-07) | hourly, 2020-01-01–2026-01-01 (52,614 rows) | `hourly_solar_wind_generation_2021_2025.ipynb` → `2_cleaned/generation/hourly_solar_wind_generation_2020_2025.parquet` |
 | Non-renewable capacity | Generation capacity by fuel type (gas-cc + gas-other only; coal/nuclear/diesel excluded — together ~25% of thermal capacity, but no coal/nuclear and only minimal diesel is planned per ERCOT's forecast) | ERCOT [Capacity Changes by Fuel Type Charts](https://www.ercot.com/files/docs/2026/06/03/Capacity-Changes-by-Fuel-Type-Charts_May_2026.xlsx) (May 2026), decided 2026-07-06, reconfirmed 2026-07-07 | yearly, 2020–2025 | manual → `2_cleaned/generation/ERCOT nonRE capacity 2020-2025.csv` |
-| Seven-Day Load Forecast by Model & Weather Zone (planned) | Per-model hourly load prediction, current day → 7 days ahead | **NP3-565-CD**, live, hourly report cadence — identified 2026-07-07 | hourly, by weather zone, 7-day horizon | (to add — extract 3hr/6hr/day-ahead slices; tracked as Notion to-do "real time load prediction 3, 6 hours + day ahead pipeline") |
+| Seven-Day Load Forecast by Model & Weather Zone | Per-model hourly load prediction, current day → 7 days ahead; day-ahead slice kept before DAM close | **NP3-565-CD**, live, hourly report cadence — identified 2026-07-07, extractor built 2026-07-14 | hourly, by weather zone, 7-day horizon (day-ahead slice extracted) | `ercot_mtlf_day_ahead.py` — trial pull only so far (`mtlf_day_ahead_trial.csv`); full extract not yet run |
 
 Script architecture & behavior: [[extraction-scripts]].
 
@@ -46,11 +46,13 @@ Pipeline from here to findings: [[analysis-workflow]].
 > coarser-granularity** series (hourly, 2020–2026), distinct from the live by-geo wind/solar
 > API pipeline already covered above and in [[wind-power-production]] (does not replace it).
 >
-> A downstream WIP notebook, `06_metric_nonvariable_load_capacity` (see [[notebook-catalog]]),
-> merges this renewable-gen series with load/price/capacity to compute the
-> load-vs-firm-capacity metric proposed in [[sources/2026-07-06_weekly-meeting]]
-> (`(load − renewable_gen) / non_re_capacity`). Notebook currently fails on a later, unrelated
-> price-metric cell (incomplete SQL) — the capacity-ratio metric itself runs clean.
+> **Resolved 2026-07-17:** the downstream notebook that merges this renewable-gen series with
+> load/price/capacity to compute the load-vs-firm-capacity ("spare capacity") metric
+> (`(load − renewable_gen) / non_re_capacity`, [[sources/2026-07-06_weekly-meeting]]) is now
+> `06_spare_capacity` (the earlier `06_metric_nonvariable_load_capacity`, broken on an
+> incomplete-SQL cell, was deleted 2026-07-14 and replaced). The metric runs clean and
+> correlates strongly with `log(rtm_price)` — see
+> [[analysis/spare-capacity-correlates-with-rtm-price]], [[notebook-catalog]].
 
 ## Related
 - [[ercot]] · [[rtm-dam]] · [[eia]] · [[ordc-price-adders]] · [[rtc-b-asdc]] · [[load-zones]]
@@ -58,4 +60,4 @@ Pipeline from here to findings: [[analysis-workflow]].
 
 ## Sources
 - [[sources/2026-06-30_data-and-eda-notes]] · [[sources/2026-07-06_weekly-meeting]] ·
-  [[sources/2026-07-07_research-update]]
+  [[sources/2026-07-07_research-update]] · [[sources/2026-07-13_weekly-meeting-spare-capacity]]

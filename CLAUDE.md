@@ -40,14 +40,18 @@ ERCOT-Research/
 │   ├── 1.2_raw_api/           ← API pulls (ERCOT public API / EMIL)
 │   ├── 1.3_raw_other/         ← EIA, weather, third-party
 │   ├── 2_cleaned/             ← cleaned/processed datasets
-│   └── 3_analysis/            ← analysis-ready / derived datasets
+│   ├── 3_analysis/            ← analysis-ready / derived datasets (cross-source merges)
+│   └── 4_model/               ← modeling-ready datasets exported from 03_notebooks/03_model
+│                                  (added 2026-07-14; regression/ML inputs, one level past 3_analysis)
 ├── 02_scripts/                ← extraction & transformation code
 │   ├── 1_scrapers/            ← ERCOT-API extractors (+ ercot_common core)
 │   └── 2_parsers/             ← excel→parquet + adder parsers
 ├── 03_notebooks/              ← EDA & analysis notebooks
 │   ├── 00_check/              ← prelim API-check notebooks (run before building any extractor)
 │   ├── 01_eda/                ← single data source (summary stats, distribution patterns)
-│   └── 02_analysis/           ← multiple data source (merge, scatter plots, distribution patterns)
+│   ├── 02_analysis/           ← multiple data source (merge, scatter plots, distribution patterns)
+│   └── 03_model/               ← statistical/ML modeling on top of 02_analysis outputs
+│                                  (added 2026-07-14; e.g. regression on the spare-capacity metric)
 └── 04_jobs/                   ← long-running batch jobs (downloads, archives)
 ```
 
