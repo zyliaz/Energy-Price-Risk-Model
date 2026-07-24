@@ -11,7 +11,7 @@ library(corrplot)
 library(car)
 ```
 ```{r}
-df <- read_csv("../../01_data/4_model/ercot_regression_model_dataset.csv", col_types = cols(datetime = col_skip(), year = col_character()))
+df <- read_csv("../../01_data/4_model/model dataset.csv", col_types = cols(datetime = col_skip(), year = col_character()))
 head(df)
 ```
 
@@ -31,6 +31,7 @@ print(cor_matrix)
 corrplot(cor_matrix, method ="circle", addCoef.col=TRUE )
 
 ```
+
 ```{r}
 cor_by_year <- df %>%
   group_by(year) %>%
@@ -41,8 +42,6 @@ cor_by_year <- df %>%
   })
 cor_by_year
 ```
-
-
 ```{r}
 mod1 <- lm(rtm_price ~ spare_capacity + ng_price + degree_days + factor(year) + factor(season) + time_of_day, df)
 summary(mod1)

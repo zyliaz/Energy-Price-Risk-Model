@@ -1,9 +1,9 @@
 ---
 title: Overview & Thesis — Drivers of ERCOT Price Volatility
 type: overview
-tags: [ercot, price-volatility, thesis]
+tags: [ercot, price-volatility, thesis, simulation]
 status: developing
-updated: 2026-07-17
+updated: 2026-07-24
 ---
 
 # Drivers of ERCOT Price Volatility
@@ -17,6 +17,19 @@ decompose volatility in real-time (RTM) and day-ahead (DAM) prices into contribu
 - **Fuel** — **[[natural-gas-prices]]** as the marginal-cost setter.
 - **Weather** — **[[weather-hdd-cdd]]** as an upstream driver of load.
 - **Scarcity mechanisms** — **[[ordc-price-adders]]**, which inject large, nonlinear price spikes under tight reserves.
+
+**Extended goal (2026-07-20, [[sources/2026-07-20_meeting-notes]]):** once the decomposition
+model is fit, use it for **scenario simulation** — evaluating hypothetical futures (e.g.
+sustained high natural-gas prices, shrinking spare thermal capacity, more frequent heat waves;
+see [[sources/2026-07-14_capacity-model-research-update]]). This reframes `CLAUDE.md`'s
+research-question line (working-tree edit as of 2026-07-24: "Model price with variables, then
+simulate with artificial scenarios") as a restatement of the same goal, not a scope change —
+decomposition is still the mechanism, simulation is the stated end use. Practically, this
+means driver variables that are themselves correlated with each other (e.g. `degree_days` and
+`spare_capacity`, both driven by load — see [[feature-engineering]]) need their effects
+**isolated**, not just included additively, before the model can be used to hold one factor
+fixed and vary another. Not yet implemented in the current regression (`mod1` in
+`03_notebooks/03_model/ERCOT regression.Rmd`).
 
 ## Working thesis (evolving — v1.1, 2026-06-30)
 ERCOT's **[[energy-only-market]]** design concentrates fixed-cost recovery into a small
@@ -50,11 +63,23 @@ combined with natural-gas price and degree-days in an OLS regression, explains a
 RTM price variance (R²=0.552; spare-capacity and NG-price coefficients both significant,
 p<0.001). This is the most direct evidence so far that tightening capacity margins, not
 smooth fundamentals, drive price levels — see
-[[analysis/spare-capacity-correlates-with-rtm-price]], [[feature-engineering]]. The
-regression itself (`03_notebooks/03_model/01_regression.ipynb`) was edited 2026-07-17 to
-remove its modeling cells (now a dataset-export step only, pending the next modeling pass) —
-treat the R² and coefficients as historical/provisional, not currently reproducible from the
-notebook as saved. See [[notebook-catalog]].
+[[analysis/spare-capacity-correlates-with-rtm-price]], [[feature-engineering]]. That
+R²=0.552 figure is from a Python OLS pass that predates a 2026-07-17 edit removing all
+modeling cells from the notebook (now `01_regression_data.ipynb`, dataset-export only) —
+treat it as historical/provisional. **Update (2026-07-21–24):** modeling moved to a companion
+R script (`ERCOT regression.Rmd`, formula `rtm_price ~ spare_capacity + ng_price +
+degree_days + factor(year) + factor(season) + time_of_day`) with two new predictors
+(`time_of_day`) and an hourly (not daily) degree-days feed; **not independently run this
+session** (no R runtime available), so its results aren't yet confirmed. ✅ **Fixed
+2026-07-24:** the hourly degree-days feed (ERA5) is natively UTC-timestamped and was being
+joined without timezone conversion against the Central-time RTM/load series. Fixed at the
+point of use in `06_spare_capacity.ipynb`/`01_regression_data.ipynb` (convert to
+`America/Chicago` right after loading, before the join) — the ERA5 scraper/cleaned files
+stay UTC, unchanged, per the human's instruction not to re-touch already-scraped data.
+Resulting correlations: `degree_days`↔`rtm_price` 0.184, `degree_days`↔`spare_capacity` 0.579.
+The historical R²=0.552 figure predates both this fix and the `time_of_day` addition, so a
+fresh model run (Python or R) is still needed for a current number. See [[weather-hdd-cdd]],
+[[feature-engineering]], [[notebook-catalog]].
 
 ## Direction (2026-07-01 advisor meeting)
 - **Stats model first**, aimed at **scenario identification**.
@@ -83,9 +108,9 @@ note for why the topic narrowed.
 ## Related
 - [[price-volatility]] · [[ordc-price-adders]] · [[rtc-b-asdc]] · [[lmp-spp]] · [[rtm-dam]]
 - [[wind-power-production]] · [[natural-gas-prices]] · [[load-and-demand]] · [[energy-only-market]]
-- [[ancillary-services]] · [[feature-engineering]]
+- [[ancillary-services]] · [[feature-engineering]] · [[weather-hdd-cdd]]
 
 ## Sources
 - [[sources/2026-06-30_ercot-market-concepts]] · [[sources/2026-06-30_data-and-eda-notes]] ·
   [[sources/2026-07-03_analysis-summary]] · [[sources/2026-07-13_weekly-meeting-spare-capacity]] ·
-  [[sources/2026-07-14_capacity-model-research-update]]
+  [[sources/2026-07-14_capacity-model-research-update]] · [[sources/2026-07-20_meeting-notes]]

@@ -66,7 +66,9 @@ def _read_sheets(path: Path, sheets: list[str]) -> pd.DataFrame:
 def _normalise(raw: pd.DataFrame) -> pd.DataFrame:
     date = pd.to_datetime(raw["Delivery Date"], format="%m/%d/%Y")
     hour = raw["Delivery Hour"].astype(int)
-    timestamp = date + pd.to_timedelta(hour - 1, unit="h")
+    # Hour-ending convention (project standard): Delivery Hour is HE-numbered
+    # (Hour 1 = the hour ending 01:00), so the HE timestamp = date + hour.
+    timestamp = date + pd.to_timedelta(hour, unit="h")
     return pd.DataFrame({
         "timestamp":          timestamp,
         "delivery_date":      _parse_date(raw["Delivery Date"]),
@@ -124,7 +126,7 @@ def process() -> None:
 def _validate(df: pd.DataFrame) -> None:
     dt = (
         pd.to_datetime(df["delivery_date"].astype(str))
-        + pd.to_timedelta(df["delivery_hour"] - 1, unit="h")
+        + pd.to_timedelta(df["delivery_hour"], unit="h")
     )
     df = df.copy()
     df["_ts"] = dt

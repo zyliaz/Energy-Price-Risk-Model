@@ -4,7 +4,7 @@ type: concept
 tags: [demand, forecast, ercot]
 status: developing
 sources: 4
-updated: 2026-07-17
+updated: 2026-07-24
 ---
 
 # Mid-Term Load Forecast (MTLF)
@@ -30,11 +30,13 @@ base parser above for that). Known artifact: ~103 timestamps have a duplicate ro
 sheet-length mismatch inherited from the same outer-merge pattern as the base parser, not a
 new bug. 76 nulls in one zone/month pairing (SCent, North) from a real source-data gap.
 
-EDA'd in [[notebook-catalog|09_mtlf_models_eda]]: exports an ERCOT-total-only hourly table
-(actual + selected + all 7 alt models, `Hourly_ERCOT_all_models_*.csv`). No derived
-ensemble/error feature is currently computed — an ensemble-mean feature and a zone-sum-vs-
-ERCOT-total validation finding existed briefly (2026-07-03–07-08) but were removed in an
-uncommitted 2026-07-09 edit; see [[notebook-catalog]] drift note.
+Was EDA'd in `09_mtlf_models_eda` (exported an ERCOT-total-only hourly table:
+actual + selected + all 7 alt models, `Hourly_ERCOT_all_models_*.csv`); that notebook was
+**deleted 2026-07-24** (uncommitted) because **a different data source will be used for this**
+(human, 2026-07-24) — a planned replacement, not yet built. No derived ensemble/error feature
+is currently computed — an ensemble-mean feature and a zone-sum-vs-ERCOT-total validation
+finding existed briefly (2026-07-03–07-08) but were removed in an uncommitted 2026-07-09 edit,
+before the notebook itself was later dropped; see [[notebook-catalog]] drift note.
 
 **Short-horizon forecast product — extractor built (2026-07-07 planned → 2026-07-14 built).**
 ERCOT's live **Seven-Day Load Forecast by Model and Weather Zone (NP3-565-CD)** publishes
@@ -47,6 +49,14 @@ forecast posted on D-1 before the 10:00 CT DAM close. A trial pull (`--trial-onl
 run (`mtlf_day_ahead_trial.csv`); the full extract (`--auto`) has not. Not yet parsed/cleaned
 or used in any EDA/analysis notebook. See [[extraction-scripts]],
 [[sources/2026-07-07_research-update]], [[ercot-data-products]].
+
+**Sibling by-weather-zone product, EDA'd (2026-07-22 build → 2026-07-24 EDA).** The related
+**NP3-561-CD** (Seven-Day Load Forecast **by Weather Zone**, single official forecast, no
+per-model columns) was extracted for Aug 2023 and analyzed in
+`02_analysis/00.0_load_fcast_wzn_aug2023` — lead-time (3h/6h/24h+ ahead) forecast error vs
+actual load and RTM price, incl. a high-price (`avg_rtm_price > 100`) slice by lead time ×
+hour-of-day. No crisp conclusion filed yet (exploratory, no markdown summary in the notebook).
+See [[notebook-catalog]], [[ercot-data-products]], [[extraction-scripts]].
 
 ## Findings
 - **log(price) vs load prediction error: no strong correlation** — forecast error alone is

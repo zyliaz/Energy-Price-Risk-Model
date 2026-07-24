@@ -4,7 +4,7 @@ type: engineering
 tags: [data, extraction, api, methods, reference]
 status: stable
 sources: 1
-updated: 2026-07-10
+updated: 2026-07-24
 ---
 
 # Data Extraction Guide
@@ -31,6 +31,7 @@ iterations. Read before adding a **new data source**. Full detail:
 | Solar 5-min by geo | NP4-746-CD | TBD → `00_check/01` notebook | planned `ercot_spp_5min.py` | TBD (Phase 1 of notebook) |
 | DAM SPP / RTM SPP (bulk) | 13060 / 13061 | archive | bulk zip download | — |
 | Price adders | NP6-793-ER | 2014+ | — | — |
+| 7-Day Load Fcast by WZ | NP3-561-CD | **archive** (live returns 0 for 2023) | archive list+POST (**≤50 docIds/batch**); keep all postings, inject `postedDatetime` | `postDatetimeFrom/To` (ISO) |
 
 > ⚠️ **Naming trap:** `ercot_spp_by_geo.py` = **Solar Power Production** (NP4-745-CD), *not*
 > Settlement Point Price. "SPP" is overloaded across this project. See [[lmp-spp]] for the
@@ -73,7 +74,31 @@ iterations. Read before adding a **new data source**. Full detail:
     2023–2025 hourly wind/solar output files are already hour-**ending**. Concatenating
     without shifting the older span by +1h silently misaligns two segments of the same series.
     Check convention per file, not per dataset. See `hourly_solar_wind_generation_2021_2025.ipynb`,
-    [[ercot-data-products]].
+    [[ercot-data-products]]. **Project standard is hour-ending (HE)** — full convention + date+HE→datetime
+    recipes in [[feature-engineering]] "Datetime convention". RTM adders / RTM LZ-HB SPP were
+    realigned HS→HE on 2026-07-23 (kept 15-min interval-beginning as atomic truth).
+13. **Archive `POST /download` is case-sensitive AND batch-capped** (found on NP3-561-CD,
+    2026-07-22). The download route needs the **UPPERCASE** EMIL id (`.../archive/NP3-561-CD/download`);
+    a lowercase POST returns **HTTP 405**. It also caps at **~50 docIds per request** — n≥100
+    returns HTTP 405 (a misleading status for an oversized batch, not a real "method not
+    allowed"). Chunk downloads at 50. The **list GET** accepts either case and `size` up to 1000.
+14. **Some archive forecasts omit `postedDatetime` from the CSV.** NP3-561-CD archive CSVs carry
+    only `DeliveryDate/HourEnding/<zones>/SystemTotal/DSTFlag` — the posting timestamp lives only
+    in the archive doc metadata (`postDatetime`) and the ZIP entry filename. When every posting
+    must stay distinguishable (rolling snapshots, ~192 postings per delivery-hour), map each inner
+    file's **leading docId → the list's `postDatetime`** and inject it as a column.
+15. **Non-ERCOT sources bring their own timestamp convention — verify it, don't assume HE.**
+    Found 2026-07-24: the ERA5 (Copernicus CDS) hourly temperature pipeline
+    (`era5_ercot_temp_2021-2025.py`) writes `valid_time` straight through as `datetime` with no
+    conversion — ERA5 is natively **UTC**, but every ERCOT-derived series in this repo is
+    hour-ending **Central Time**. Joining on raw `datetime` equality silently misaligns by
+    ~5–6 hours. Check a new source's diurnal pattern (peak/trough hour) against the expected
+    local pattern before trusting a timestamp join. See [[weather-hdd-cdd]],
+    [[feature-engineering]]. Also: the CDS API needs live credentials (`CDS_API_URL`/
+    `CDS_API_KEY` in `.env`) and `client.retrieve()` calls a real, potentially slow external
+    queue — don't re-run a CDS notebook/script cell unattended if the target `.nc` file already
+    exists on disk (the `.py` script has an existing-file skip check; the check notebook's
+    "test cell" does not).
 
 ## Timeouts (non-member, empirical)
 Connect 10 s · read 60 s (live) / 180 s (archive list) / 240 s (archive download) · sleep
@@ -85,6 +110,16 @@ Two GETs discover everything: `GET /api/public-reports/{PRODUCT}` → sub-report
 `GET {endpoint}` (no params) → `fields[].name/dataType/hasRange/searchable`. Any field with
 `hasRange=True` accepts `{field}From`/`{field}To`. Page-1 with no params returns *today*.
 Compute pages yourself: `ceil(totalRecords / page_size)`.
+
+> **Endpoint-check template (live + archive):** the canonical worked example for a new ERCOT
+> API endpoint check is `03_notebooks/00_check/04_ercot_7d_load_fcast_by_wzn_endpoint_check.ipynb`
+> — it demonstrates the full pattern end-to-end: live coverage probe → archive list
+> (`docId → postDatetime`) → chunked `POST /download` → nested unzip → schema + timed one-day
+> sample → runtime extrapolation (Method B vs C). Copy it (not the older, credential-blocked
+> `00_endpoint_check_template`) when standing up the next extractor. A **PreToolUse(Write) hook**
+> (`.claude/hooks/require_endpoint_check.sh`, added 2026-07-22) gates new
+> `02_scripts/1_scrapers/ercot_*.py` extractors on a matching `00_check` notebook existing first.
+> See [[notebook-catalog]].
 
 ## Memory-efficient pattern
 Stream pages straight to parquet via a chunk writer (open on first write to fix schema,

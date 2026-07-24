@@ -1,7 +1,7 @@
 ---
 title: Index
 type: overview
-updated: 2026-07-17
+updated: 2026-07-24
 ---
 
 # Wiki Index
@@ -37,36 +37,62 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
 - [[load-and-demand]] — total/zonal demand and net-load ramps.
 - [[wind-power-production]] — wind & solar output, forecast error, capacity factor.
 - [[natural-gas-prices]] — marginal fuel cost (Henry Hub, Citygate).
-- [[weather-hdd-cdd]] — temperature → load (GRIDMET; HDD/CDD).
+- [[weather-hdd-cdd]] — temperature → load. Two sources now: **GRIDMET** (daily, per-county,
+  legacy, still used by `08_hdd_eda`) and **ERA5** (hourly, Texas-wide, added 2026-07-21 for
+  modeling). ERA5's native UTC timestamps were being joined without conversion in the
+  spare-capacity regression (~5–6h misalignment on `degree_days`) — **fixed 2026-07-24** at
+  the notebook level (`06_spare_capacity`, `01_regression_data`), scraper/raw files untouched.
 - [[mid-term-load-forecast]] — forecast error channel; now also carries 7 alt-model
   load-prediction features (A3/A6/E/E1/E2/E3/M — each a different weather-forecast input,
-  answered 2026-07-07). Planned: NP3-565-CD short-horizon (3hr/6hr/day-ahead) forecast product.
+  answered 2026-07-07; EDA notebook `09_mtlf_models_eda` **deleted 2026-07-24** — a different
+  data source will be used for this instead, per the human). Short-horizon forecast product:
+  NP3-565-CD (day-ahead slice, extractor built, not yet EDA'd) and its sibling NP3-561-CD
+  (by-weather-zone, EDA'd 2026-07-24 in `00.0_load_fcast_wzn_aug2023`, no crisp finding filed
+  yet — human plans to file one next week).
 - [[load-zones]] — **all zone geographies** (LZ / weather zones / forecast zones / wind-solar regions; aliased as weather-zones, forecast-zones): mapping-file inventory (LZ→county canonical in ercot.gpkg; weather-zone→county missing), parquet schemas per geography, join caveats.
 
 ## Engineering (pipeline & methods, in `engineering/`)
 - [[new-source-checklist]] — compressed copy-paste todo for adding a data source.
 - [[data-extraction-guide]] — API auth, endpoints, pitfalls, timeouts, EMIL, jobs convention.
-- [[extraction-scripts]] — script architecture: 7 API extractors (incl. new
-  `ercot_mtlf_day_ahead`, 2026-07-14) vs excel→parquet parsers.
+- [[extraction-scripts]] — script architecture: 8 ERCOT API extractors (incl.
+  `ercot_mtlf_day_ahead` 2026-07-14 and `ercot_7d_load_fcast_wzn_archive` 2026-07-22, NP3-561-CD)
+  vs excel→parquet parsers, plus a new non-ERCOT-scraper grouping (`era5_ercot_temp_2021-2025.py`,
+  2026-07-21, Copernicus CDS hourly Texas temperature — ⚠️ UTC timestamps unconverted).
 - [[analysis-workflow]] — 5-step raw→cleaned→analysis pipeline mapped to the repo + lineage.
 - [[feature-engineering]] — adder demand, CDD/HDD, capacity factor, net load, spare-capacity ratio.
-- [[notebook-catalog]] — architecture of the 19 kept `00_check`/`01_eda`/`02_analysis`
-  notebooks (I/O, patterns) + template, plus `03_model/01_regression.ipynb` — the first
-  notebook in a new, adopted (2026-07-17) 4th grouping for modeling. Tracks 3 open gaps: no
+- [[notebook-catalog]] — architecture of the `00_check`/`01_eda`/`02_analysis` notebooks
+  (I/O, patterns) + template, plus `03_model/01_regression_data.ipynb` — the first notebook
+  in a new, adopted (2026-07-17) 4th grouping for modeling. Tracks 3 open gaps: no
   WPP EDA, no RTM-vs-DAM comparison,
   no node→zone cleaning notebook (all dropped, not renamed, during the old→new repo
   migration). Every entry carries a `Last run` execution stamp. `00_emil_api_check` deleted
   2026-07-08, superseded by `00_endpoint_check_template` (not yet re-run since its 2026-07-08
-  rewrite). `09_mtlf_models_eda` (alt-forecast-model EDA, added 2026-07-03): ensemble-mean
-  feature added 07-03, removed in an uncommitted 07-09 edit. **2026-07-14:**
+  rewrite). **2026-07-14:**
   `06_metric_nonvariable_load_capacity` (broken) deleted, replaced by `06_spare_capacity`
   (passing) — see [[analysis/spare-capacity-correlates-with-rtm-price]].
   **2026-07-17:** `00_load_forecast_rtm_correlation_wip` found broken (dropped `set_index`
   call), **fixed same day** — passing again. `03_ng_price_correlation`'s Henry-Hub
   date-windowing bug fixed same day, but the Aug-2023 NG-deviation finding still doesn't
-  reproduce for an unrelated reason — see [[natural-gas-prices]]. `03_model/01_regression`
-  had its Random Forest cell removed (fixed the metric bug) but the edit also removed the
-  OLS/linear-regression cells — now a dataset-export step only, no model fit.
+  reproduce for an unrelated reason — see [[natural-gas-prices]].
+  **2026-07-22:** new `00_check/04_ercot_7d_load_fcast_by_wzn_endpoint_check` (NP3-561-CD) —
+  PASS, and now the **canonical ERCOT endpoint-check template**; feeds the new
+  `ercot_7d_load_fcast_wzn_archive` extractor (Aug 2023 pulled). A PreToolUse hook now gates new
+  extractors on a matching `00_check` notebook.
+  **2026-07-24 (this sync — mostly uncommitted repo drift from 2026-07-21–23):** new
+  `00_check/02_era5_ercot_temp` (hourly ERA5 Texas temperature, native UTC timestamps,
+  credentials present); `00_load_forecast_rtm_correlation_wip` renamed →
+  `00_load_forecast_rtm_correlation` (promoted `wip`→`stable`); new
+  `02_analysis/00.0_load_fcast_wzn_aug2023` (NP3-561-CD lead-time EDA, fills the 2026-07-22
+  gap, no crisp finding filed yet — human will file one next week); `09_mtlf_models_eda`
+  **deleted** (a different data source will be used, per the human); `03_model/01_regression.ipynb`
+  renamed → `01_regression_data.ipynb`, promoted `wip`→`stable` (the `OUT_DIR.mkdir()` issue is
+  resolved), gained `time_of_day`/`total_load` columns and an hourly (ERA5) degree-days feed —
+  its UTC-vs-Central misalignment was found **and fixed same session** (conversion added in
+  `06_spare_capacity`/`01_regression_data` at the point of use, scraper/raw files untouched
+  per the human's instruction); modeling itself moved to a new, unverified companion R script
+  (`ERCOT regression.Rmd`). All notebooks re-verified via fresh `nbconvert --execute` this
+  session except the live-CDS-API cell in `02_era5_ercot_temp` (not re-run; data verified from
+  its actual output instead — see [[notebook-catalog]]).
 
 ## Sources
 - [[sources/2026-06-30_ercot-market-concepts]] — pricing mechanics (ORDC/ASDC, LMP/SPP, ancillary).
@@ -85,6 +111,9 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
   `(load−renewable_gen)/non_re_capacity` proposed, correlates strongly with `log(price)`.
 - [[sources/2026-07-14_capacity-model-research-update]] — regression modeling plan for the
   spare-capacity metric (year + season + spare_capacity + ng_price + degree_days).
+- [[sources/2026-07-20_meeting-notes]] — reframes the model's purpose as scenario
+  **simulation**; specifies hourly degree-days, `time_of_day`, and an R regression; surfaces
+  the degree-days/spare-capacity collinearity-via-load issue.
 
 ## Analysis (filed findings — one note per notebook, named by finding)
 - [[analysis/ng-hub-correlation-breaks-uri-aug2023]] — NG benchmarks track monthly except
@@ -93,6 +122,8 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
   RTM price quantile; RTRDP tail non-monotonic. (`02_price_adder_activation`)
 - [[analysis/rtcb-activation-mirrors-ordc]] — RTC+B adders reproduce the ORDC activation
   pattern; RTRDPNS active 100% of hours. (`03_new_pa_activation`)
+- [[analysis/pa-stays-below-spp-except-negative-price-hours]] — PA ≤ RTM SPP in ~99.9% of
+  pre-2025 hours; all exceptions are negative-price hours. (`07_pa_vs_spp`)
 - [[analysis/load-price-correlation-is-seasonal]] — log(price)–load correlation concentrates
   in months 1–2 and 5–10. (`05_load_rtm_price_plot`)
 - [[analysis/mtlf-overpredicts-at-high-load-price]] — forecast error alone weak; MTLF

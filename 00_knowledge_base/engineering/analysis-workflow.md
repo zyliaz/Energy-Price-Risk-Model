@@ -4,7 +4,7 @@ type: engineering
 tags: [methods, workflow, pipeline, reference]
 status: stable
 sources: 1
-updated: 2026-07-17
+updated: 2026-07-24
 ---
 
 # Analysis Workflow
@@ -26,9 +26,12 @@ duplicated here). This page covers the *why*: the layering rule and how files re
   may live here or stay in the old repo (project convention).
 - **`4_model`** (added 2026-07-14, adopted 2026-07-17) — modeling-ready datasets exported from
   `03_notebooks/03_model` (regression/ML inputs, one step past `3_analysis`). Populated by
-  `01_regression.ipynb` → `ercot_regression_model_dataset.csv`. Note: that notebook's
-  `OUT_DIR.mkdir()` call is not idempotent (no `exist_ok=True`) — re-running it after the
-  directory already exists fails; not yet fixed.
+  `01_regression_data.ipynb` (renamed from `01_regression.ipynb` 2026-07-21) →
+  `ercot_regression_model_dataset.csv`. The old `OUT_DIR.mkdir()` non-idempotency issue is
+  resolved — the `.mkdir()` call was dropped once the directory became permanent; fresh
+  `nbconvert --execute` **PASS 2026-07-24**. The actual model fit now lives outside this
+  notebook, in a companion R script (`ERCOT regression.Rmd`) — not tracked as a repo layer,
+  see [[feature-engineering]], [[notebook-catalog]].
 
 See [[data-extraction-guide]] for step-1/2 mechanics. Feature definitions: [[feature-engineering]].
 Quick copy-paste version: [[new-source-checklist]].
@@ -40,7 +43,8 @@ NP6-793-ER adder ─► rtm_price_adders_15min.parquet ─► price_adders_{hour
 13061 RTM SPP ────► rtm_lzhb_spp.parquet ──► rtm_price_aggregated.csv ───────┼─► merged
 NP4-742/745 W&S ──► wpp_geo.parquet ──► (capacity factor) ──────────────────┤   analyses
 EIA NG ───────────► ng_prices_monthly.parquet ─────────────────────────────┤   (3_analysis)
-GRIDMET temp ─────► Texas_..._daily_HDD_CDD.parquet ────────────────────────┘
+GRIDMET temp ─────► Texas_..._daily_HDD_CDD.parquet ────────────────────────┤
+ERA5 temp (hourly)► Texas_hourly_temp_2021_2025.csv (2026-07-21, UTC ⚠️) ───┘
         raw (1.2/1.3)             cleaned (2_cleaned)            analysis (3_analysis)
 ```
 Examples of step-5 merges: adder × RTM price quantile ([[ordc-price-adders]]); load × RTM

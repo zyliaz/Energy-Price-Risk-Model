@@ -11,8 +11,7 @@ Read this whole file at the start of every session.
 
 ## 1. The research
 
-**Question:** What drives wholesale price volatility in **ERCOT**? Decompose how
-load, wind/solar output, natural-gas prices, weather, and ORDC scarcity price adders each contribute to real-time (RTM) price volatility.
+**Question:** What drives wholesale price volatility in **ERCOT**? Model price with variables, then simulate with artificial scenarios.
 
 **Working thesis** lives in `00_knowledge_base/00_overview.md` and evolves as
 sources accumulate. Never let the thesis drift silently — when a source changes it, update that page and note the change in the log.
@@ -44,8 +43,8 @@ ERCOT-Research/
 │   └── 4_model/               ← modeling-ready datasets exported from 03_notebooks/03_model
 │                                  (added 2026-07-14; regression/ML inputs, one level past 3_analysis)
 ├── 02_scripts/                ← extraction & transformation code
-│   ├── 1_scrapers/            ← ERCOT-API extractors (+ ercot_common core)
-│   └── 2_parsers/             ← excel→parquet + adder parsers
+│   ├── 1_scrapers/            ← ERCOT-API extractors (+ ercot_common core) + test notebooks
+│   └── 2_parsers/             ← excel→parquet + test notebooks
 ├── 03_notebooks/              ← EDA & analysis notebooks
 │   ├── 00_check/              ← prelim API-check notebooks (run before building any extractor)
 │   ├── 01_eda/                ← single data source (summary stats, distribution patterns)

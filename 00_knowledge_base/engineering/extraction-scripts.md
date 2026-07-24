@@ -4,7 +4,7 @@ type: engineering
 tags: [data, extraction, scripts, methods, reference]
 status: stable
 sources: 1
-updated: 2026-07-17
+updated: 2026-07-24
 ---
 
 # Extraction Scripts (architecture)
@@ -26,22 +26,39 @@ extractors share one core, `ercot_common.py` (`ERCOTAuth`, `ERCOTAPIClient`,
 | `ercot_wpp_archive` | Wind (backfill / cross-check) | archive 2021–2023 | list docIds → batch download |
 | *`ercot_lmp_archive`* | *LMP backfill (NP6-788-CD)* | *archive 2021–2023* | *list+download* |
 | `ercot_mtlf_day_ahead` | Seven-Day Load Forecast, day-ahead slice (NP3-565-CD) | live | per-operating-day: keep the last in-use-model posting before the 10:00 CT DAM close |
+| `ercot_7d_load_fcast_wzn_archive` | Seven-Day Load Forecast **by Weather Zone** (NP3-561-CD), **every posting kept** | archive | list docIds → batch download (**≤50/POST**); inject `postedDatetime` from doc metadata; filter to delivery-date window |
 
 > The canonical set was **6 extractors** (3 live + 3 archive); a 7th, `ercot_mtlf_day_ahead`,
-> was added 2026-07-14 (new, uncommitted as of 2026-07-17) for the NP3-565-CD short-horizon
-> forecast product tracked in [[mid-term-load-forecast]]. It shares `ercot_common.py`
-> (auth/pagination/writer) like the others; supports `--discover`, `--trial-only`, `--auto`.
-> A trial pull exists (`01_data/1.2_raw_api/mtlf_day_ahead_trial.csv`); the full extract has
-> not been run. `ercot_lmp_archive` is still **not copied into this repo** — NP6-788-CD nodal
+> was added 2026-07-14 for the NP3-565-CD short-horizon forecast product tracked in
+> [[mid-term-load-forecast]], and an 8th, `ercot_7d_load_fcast_wzn_archive`, on 2026-07-22 for
+> the sibling **NP3-561-CD** product (see [[ercot-data-products]]). They share `ercot_common.py`
+> (auth/writer) like the others; all support `--trial-only`/`--auto`.
+> `mtlf_day_ahead` has a trial pull only (`mtlf_day_ahead_trial.csv`); `7d_load_fcast_wzn_archive`
+> has been run for **Aug 2023** (`load_fcast_wzn_archive_20230801_20230831.parquet`,
+> 142,776 rows = 744 delivery-hours × ~192 postings, 0 nulls).
+> `ercot_lmp_archive` is still **not copied into this repo** — NP6-788-CD nodal
 > LMP was scoped out earlier. Add it if the PA-vs-SPP nodal validation ([[lmp-spp]]) goes
 > ahead. **No solar archive exists** — the live solar endpoint already reaches 2021.
+>
+> **NP3-561-CD vs NP3-565-CD** — easy to confuse: 561 = the single official *by-weather-zone*
+> forecast (no `model`/`inUseFlag` columns); 565 = the *by-model-and-weather-zone* variant that
+> `ercot_mtlf_day_ahead` slices. The live endpoint for 561 returns 0 for 2023 (short rolling
+> window), so historical months come from the archive; the same forecast is reposted ~hourly,
+> so `deliveryDate × hourEnding` recurs across ~192 postings and every posting is retained,
+> tagged by injected `postedDatetime` (not present in the archive CSV).
+
+**1b) Non-ERCOT scrapers → `02_scripts/1_scrapers/`** (share the directory, not `ercot_common`)
+
+| Script | Data | Source | Notes |
+|---|---|---|---|
+| `era5_ercot_temp_2021-2025.py` | Hourly Texas-statewide mean temperature, 2021–2025 | **ERA5** (Copernicus Climate Data Store reanalysis) | Added 2026-07-21. Downloads per-year `.nc` (skips if already on disk), masks the grid to the TX state boundary, averages, converts K→°F, validates (schema/NaN/dupe/missing-hour/range checks), writes `2_cleaned/weather/Texas_hourly_temp_2021_2025.csv`. Needs `CDS_API_URL`/`CDS_API_KEY` in `.env`. ⚠️ Output `datetime` is UTC, not this repo's HE-Central convention — see [[data-extraction-guide]] pitfall #15, [[weather-hdd-cdd]]. Checked via `00_check/02_era5_ercot_temp.ipynb`. |
 
 **2) Excel→parquet parsers → `02_scripts/2_parsers/`** (no network; consolidate local files)
 
 | Script | Transforms |
 |---|---|
 | `organize_lmp_parquet` | Local DAM/RTM Excel report archives → parquet |
-| `organize_rtm_lmp_2026` | RTM (report 13061) Excel → parquet |
+| `organize_rtm_lmp_2026` | RTM (report 13061) Excel → parquet. **Fixed 2026-07-23:** timestamp built as `date + DeliveryHour` (HE), was `date + (DeliveryHour−1)` (HS) — part of the repo-wide HE standardization, see [[feature-engineering]] "Datetime convention". |
 | `parse_mid_term_load_forecast_parquet` | MTLF Metrics xlsx → parquet (hourly error) |
 | `parse_mid_term_load_forecast_models_parquet` | MTLF Metrics xlsx → parquet (all 7 alt forecast models: A3/A6/E/E1/E2/E3/M, per zone — load-prediction features, no error calc) |
 | `parse_rtm_price_adders` | Pre-2025 price adders → parquet |

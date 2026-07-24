@@ -4,23 +4,26 @@ type: engineering
 tags: [methods, notebooks, reference]
 status: developing
 sources: 0
-updated: 2026-07-17
+updated: 2026-07-24
 ---
 
 # Notebook Catalog (architecture)
 
 What each **kept** notebook does and how `03_notebooks/` is organized. Companion to
 [[extraction-scripts]] (the scripts) and [[analysis-workflow]] (the pipeline). Reflects the
-19 notebooks in `00_check`/`01_eda`/`02_analysis` (old `00_emil`/`03`/`04`/`05` and 2 helper
-scripts dropped during migration, not renamed/kept; `09_mtlf_models_eda` added 2026-07-03;
-`01_wind_solar_5min_endpoint_check` added 2026-07-03;
-`06_investigate_abnormal_pa_wip` + its output `merged_data.csv` dropped 2026-07-05 —
-not formally tested, PA>SPP claims removed from the wiki; `06_metric_nonvariable_load_capacity`
-added 2026-07-10 then **deleted 2026-07-14** (commit `eace499`), replaced by
-`06_metric_nonvariable_load_capacity` → `06_spare_capacity` — same slot, renamed, rewritten,
-now passing — see its entry). A 4th grouping, `03_model/`, was adopted into CLAUDE.md §2 on
-2026-07-17 (human confirmed) for statistical/ML modeling on top of `02_analysis` outputs; its
-first notebook, `01_regression.ipynb`, is cataloged in its own section below.
+notebooks in `00_check`/`01_eda`/`02_analysis`/`03_model` (old `00_emil`/`03`/`04`/`05` and 2
+helper scripts dropped during migration, not renamed/kept; `01_wind_solar_5min_endpoint_check`
+added 2026-07-03; `06_investigate_abnormal_pa_wip` + its output `merged_data.csv` dropped
+2026-07-05 — not formally tested, PA>SPP claims removed from the wiki;
+`06_metric_nonvariable_load_capacity` added 2026-07-10 then **deleted 2026-07-14** (commit
+`eace499`), replaced by `06_spare_capacity` — same slot, renamed, rewritten, now passing — see
+its entry; `02_era5_ercot_temp` added 2026-07-21; `00_load_forecast_rtm_correlation_wip`
+renamed `00_load_forecast_rtm_correlation` and `09_mtlf_models_eda` **deleted**, both
+2026-07-23/24, uncommitted; `00.0_load_fcast_wzn_aug2023` added 2026-07-24). A 4th grouping,
+`03_model/`, was adopted into CLAUDE.md §2 on 2026-07-17 (human confirmed) for statistical/ML
+modeling on top of `02_analysis` outputs; its first notebook, renamed
+`01_regression_data.ipynb` (was `01_regression.ipynb`) 2026-07-21, is cataloged in its own
+section below, alongside a new companion R script outside the notebook-catalog's scope.
 
 ## Grouping
 - **`00_check/`** — prelim API inspection before writing an extractor.
@@ -100,6 +103,49 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 - Carries the canonical **zone-column-name reference table** (weather/LZ/FZN/wind/solar
   spellings as they appear in parquets) for schema checks; `00_emil_api_check` points here.
   Wiki mirror: [[load-zones]].
+
+### 02_era5_ercot_temp   [check · developing]
+- **Purpose:** Pre-scraper review + first pull for hourly Texas-statewide temperature from
+  **ERA5** (Copernicus CDS reanalysis) — added 2026-07-21 to switch degree-days from the old
+  daily GRIDMET/county source to hourly, for modeling (per [[sources/2026-07-20_meeting-notes]]).
+  Clips a lat/lon bbox to the TX state boundary (GeoJSON, cached), pulls one test month via
+  `cdsapi.Client.retrieve()`, masks + averages to a single Texas-wide hourly series, exports.
+- **In:** CDS API (`reanalysis-era5-single-levels`, `2m_temperature`) + a public TX boundary
+  GeoJSON. **Out:** `01_data/1.2_raw_api/era5_hourly_temp/*.nc`,
+  `01_data/2_cleaned/weather/Texas Hourly Temperature Average test.csv`. **Methods:** cdsapi,
+  xarray, geopandas. **Wiki:** [[weather-hdd-cdd]], [[data-extraction-guide]]
+- Requires `.env` (`CDS_API_URL`/`CDS_API_KEY`) — present and populated in this repo's `.env`
+  (unlike the ERCOT `00_check` notebooks, which are credential-blocked).
+- ⚠️ Cell 4 ("test cell") calls `client.retrieve()` unconditionally, with no existing-file
+  skip check (unlike the companion `.py` script) — re-running it re-hits the live CDS API.
+  **Not re-executed this session** for that reason; verified indirectly instead by loading
+  the pipeline's actual output (`Texas_hourly_temp_2021_2025.csv`, produced by the sibling
+  script) and re-running its validation checks fresh: 43,824 rows, full hourly coverage
+  2021-01-01–2025-12-31, 0 nulls/dupes, temp range 7–104°F — **PASS 2026-07-24** (data
+  re-verified; retrieval cells not re-run).
+- ⚠️ Output `datetime` is **UTC**, not this repo's HE-Central convention — confirmed via
+  diurnal profile (peak at raw hour 21, trough at hour 11–12, a ~6h shift from expected
+  local peak/trough). Not fixed — see [[weather-hdd-cdd]], [[feature-engineering]].
+
+### 04_ercot_7d_load_fcast_by_wzn_endpoint_check   [check · template · stable]
+- **Purpose:** Endpoint check for **NP3-561-CD** (Seven-Day Load Forecast by Weather Zone) and,
+  as of 2026-07-22, the **canonical template** for a new ERCOT API endpoint check — the
+  worked example the [[data-extraction-guide]] and the extractor-gating hook point to. Six
+  cells demonstrate the full live+archive pattern: (1) live coverage probe (0 records for Aug
+  2023 → archive required) + field schema; (2) archive list (`docId → postDatetime`) for a
+  one-delivery-day window; (3) **timed one-day sample extraction** (delivery 2023-08-15, all
+  postings, chunked `POST /download` at 50, nested unzip, `postedDatetime` injected); (4)
+  runtime extrapolation → Method B vs C.
+- **In:** Public API (live `np3-561-cd/7d_load_fcast_by_wzn` + archive `NP3-561-CD`). **Out:**
+  none (inspection only). **Methods:** requests, zipfile, pandas. **Wiki:**
+  [[data-extraction-guide]], [[ercot-data-products]], [[mid-term-load-forecast]]
+- Requires `.env` credentials. Fed directly into the production extractor
+  `ercot_7d_load_fcast_wzn_archive.py` ([[extraction-scripts]]) — the notebook's
+  `list_docs`/`download_batch`/`process_zip`/`parse_csv` helpers are the ones the script ships.
+- Surfaced two archive quirks now in [[data-extraction-guide]] pitfalls #13/#14 (case-sensitive +
+  50-doc-capped `POST /download`; `postedDatetime` not in the CSV).
+- **Last run: 2026-07-22 — PASS** (fresh `nbconvert --execute`, 0 errors; one-day sample = 216
+  postings downloaded/parsed in 9.5 s → 4,608 rows, 24/24 delivery-hours, 0 nulls).
 
 ## 01_eda — single-source clean + explore
 ### 00_rtm_price_eda   [eda · stable]
@@ -182,41 +228,52 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   previously carried a stale `08_hdd_eda_wip` name/status with no corresponding file.
 - **Last run: 2026-07-03 — PASS.**
 
-### 09_mtlf_models_eda   [eda · stable]
-- **Purpose:** Alt-forecast-model EDA (companion to `02_mtlf_eda`): the 7 extra ERCOT models
-  (A3/A6/E/E1/E2/E3/M) per zone, ERCOT-total only.
-- **In:** `mid_term_load_forecast_models_20220201_20251201.parquet` (1.2_raw_api). **Out:**
-  `2_cleaned/load/forecast/Hourly_ERCOT_all_models_20220201_20251201.csv` (actual + selected +
-  all 7 alt models, ERCOT-only, hourly) — only declared output as of the current saved
-  notebook.
-- **Methods:** duckdb, groupby, null/duplicate checks, plots. **Wiki:** [[mid-term-load-forecast]]
-- Note: reads directly from `1.2_raw_api` (the parser's actual output location), unlike
-  `02_mtlf_eda` which reads a `2_cleaned` copy of the base parser's output — that's a
-  pre-existing path oddity in `02_mtlf_eda`, not fixed here (out of scope for this task).
-- ⚠️ **Drift found 2026-07-10:** an uncommitted, unlogged edit (file mtime 2026-07-09) removed
-  the ensemble-mean computation/export cell and the zone-sum-vs-ERCOT-total validation plots
-  entirely — the notebook no longer writes `model_ensemble_features_ERCOT_*.csv`, and the
-  "ensemble mean less consistent than Selected (~359 MW mean diff)" finding previously recorded
-  here is **no longer reproducible from the current code** (only markdown-docstring text still
-  claims the ensemble-mean output; the code doesn't). Removed the stale finding and file
-  reference from this entry and from [[feature-engineering]] pending human confirmation this
-  simplification (vs. an accidental partial edit) was intentional — see log.
-- **Last run: 2026-07-10 — PASS** (fresh `nbconvert --execute`, 0 errors; sole declared output
-  confirmed on disk).
+### 09_mtlf_models_eda   — **deleted 2026-07-24**
+- Alt-forecast-model EDA notebook (companion to `02_mtlf_eda`; 7 extra ERCOT models
+  A3/A6/E/E1/E2/E3/M). Deleted in this session's working tree (uncommitted). **Reason
+  (human, confirmed 2026-07-24): a different data source will be used for this** — a planned
+  replacement, not yet built; not simply dropped. Its ensemble-mean feature had already been
+  dropped 2026-07-09 (see the prior entry, now superseded). See [[feature-engineering]],
+  [[mid-term-load-forecast]].
 
 ## 02_analysis — multi-source interactions
-### 00_load_forecast_rtm_correlation_wip   [analysis · wip]
+### 00_load_forecast_rtm_correlation   [analysis · stable]
 - **Purpose:** Load-forecast error vs RTM price. Finding: **log(price) vs forecast error →
   weak**.
 - **In:** `Hourly ERCOT system load and prediction.csv`, `rtm_price_aggregated.csv`.
 - **Methods:** merge, resample, scatter. **Wiki:** [[mid-term-load-forecast]], [[load-and-demand]]
+- **Renamed 2026-07-23** — file dropped its `_wip` suffix (`00_load_forecast_rtm_correlation_wip.ipynb`
+  deleted, `00_load_forecast_rtm_correlation.ipynb` added, same slot). No content changes found
+  beyond the 2026-07-17 fix already recorded (this entry) — promoting `wip`→`stable` since the
+  filename itself signals it's no longer WIP and a fresh run confirms it.
 - ⚠️→✅ **Regression found and fixed 2026-07-17:** a 2026-07-14 edit (commit `eace499`)
   had dropped `df.set_index('datetime', inplace=True)`, leaving `df` with a plain `RangeIndex`
   (columns `avg_rtm_price, datetime, actual_load, load_forecast_error, abs_load_error`); a
   later cell facetted plots by `df.index.year`, which raised `AttributeError`. **Fixed by the
   human same-day**: the year-facet cell now reads `df['datetime'].dt.year` directly instead of
   `df.index.year` (keeps `datetime` as a column rather than restoring the index).
-- **Last run: 2026-07-17 — PASS** (fresh `nbconvert --execute`, 0 errors, after the fix).
+- **Last run: 2026-07-24 — PASS** (fresh `nbconvert --execute`, 0 errors, re-verified after
+  the rename).
+
+### 00.0_load_fcast_wzn_aug2023   [analysis · developing]
+- **Purpose:** Visual-check EDA for the NP3-561-CD (Seven-Day Load Forecast by Weather Zone)
+  Aug-2023 pull — the notebook explicitly left for the human when the pipeline was built
+  2026-07-22 ([[notebook-catalog|see extraction-scripts/ercot-data-products]]). Computes
+  forecast **lead time** per posting (`day_diff×24 + posted_hr − delivery_hr` style logic via
+  duckdb), plots the 3/6/24h-ahead predicted-load series, then merges with actual load + RTM
+  price to look at forecast error vs price/hour, including an "extreme price" (`avg_rtm_price
+  > 100`) slice binned by lead time × hour-of-day.
+- **In:** `1.2_raw_api/load_fcast_wzn_archive_20230801_20230831.parquet`,
+  `2_cleaned/load/total_load_20201231_20260526.csv`,
+  `2_cleaned/rtm_price/rtm_price_aggregated_2021_2025.csv`. **Out:** none written (plots only).
+  **Methods:** duckdb (lead-time calc), pandas merge, matplotlib. **Wiki:**
+  [[mid-term-load-forecast]], [[ercot-data-products]]
+- No markdown conclusion cell — the notebook is exploratory (mean/median forecast error by
+  lead-time × hour varies widely, $0$–$800$+ MW, no monotonic lead-time trend evident from the
+  output alone). **Not filed as an `analysis/` finding this session** — the notebook doesn't
+  state a conclusion crisp enough to file without over-interpreting; flagged as a judgment
+  call rather than writing one in.
+- **Last run: 2026-07-24 — PASS** (fresh `nbconvert --execute`, 0 errors).
 
 ### 01_ng_rtm_price_correlation   [analysis · stable]
 - **Purpose:** NG vs RTM price, incl. dedicated **Feb-2021 (Uri)** analysis.
@@ -303,53 +360,83 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   `2_cleaned/generation/ERCOT nonRE capacity 2020-2025.csv`,
   `2_cleaned/rtm_price/rtm_price_aggregated_2021_2025.csv`,
   `3_analysis/ng_price/ng_prices_monthly.csv`,
-  `2_cleaned/weather/Texas daily average temp HDD CDD 2020-2025.csv`. **Out:** none written
-  (pure EDA/plotting notebook — no `.to_csv`/`.to_parquet` calls). **Methods:** duckdb (window
-  functions), statsmodels LOWESS. **Wiki:** [[feature-engineering]],
-  [[analysis/spare-capacity-correlates-with-rtm-price]]
+  `2_cleaned/weather/Texas_hourly_temp_2021_2025.csv` (**corrected 2026-07-24** — this entry
+  previously listed the old daily GRIDMET file; the notebook has read the ERA5 hourly file
+  since 2026-07-21). **Out:** none written (pure EDA/plotting notebook — no
+  `.to_csv`/`.to_parquet` calls). **Methods:** duckdb (window functions), statsmodels LOWESS.
+  **Wiki:** [[feature-engineering]], [[analysis/spare-capacity-correlates-with-rtm-price]]
 - Fixes the bug that killed the old notebook: the incomplete
   `AVG(...) OVER (PARTITION BY )` window-function SQL is gone from this rewrite.
 - ⚠️ `01_data/3_analysis/price incentive metrics/merged_gen_load_price_capacity.csv` — the
   leftover file flagged 2026-07-10 as unreproducible from any cell in the deleted notebook —
   is still on disk, still not written by anything in `06_spare_capacity` either. Still not
   deleted; still flagged, now against this notebook instead.
-- **Last run: 2026-07-17 — PASS** (fresh `nbconvert --execute`, 0 errors, after installing the
-  missing `statsmodels` dependency in the sandbox).
+- ✅ **`degree_days` UTC/Central misalignment fixed 2026-07-24:** added a UTC→
+  `America/Chicago` conversion (+ DST fold averaging) right after loading `TEMP_PATH`, before
+  the duckdb join — the raw ERA5 files stay UTC/untouched per the human's instruction. See
+  [[weather-hdd-cdd]], [[feature-engineering]].
+- **Last run: 2026-07-24 — PASS** (fresh `nbconvert --execute`, 0 errors, after the timezone
+  fix; previously verified 2026-07-17 after installing `statsmodels`).
 - Finding filed: [[analysis/spare-capacity-correlates-with-rtm-price]].
 
+### 07_pa_vs_spp   [analysis · developing]
+- **Purpose:** Tests whether the ORDC price adder (PA) ever exceeds the RTM settlement point
+  price (SPP), pre- and post-2025. Merges HE-hourly adders with the corrected real-RTM SPP on the
+  raw HE timestamp (no shift).
+- **In:** `3_analysis/price_adders_analysis/price_adders_numerical_analysis.csv`,
+  `3_analysis/price_adders_analysis/post_202512/post_202512_price_adders_hourly.csv`,
+  `2_cleaned/rtm_price/rtm_price_aggregated_2021_2025.csv`,
+  `3_analysis/price_adders_analysis/post_202512/rtm_price_mean_20251205_20260516.csv`.
+  **Out:** `3_analysis/price_adders_analysis/pa_vs_spp/` (`pa_gt_spp_exceptions.csv` + 2 PNGs).
+  **Methods:** pandas merge, 1:1-line scatter. **Wiki:** [[ordc-price-adders]], [[lmp-spp]],
+  [[analysis/pa-stays-below-spp-except-negative-price-hours]].
+- **Last run: 2026-07-23 — PASS** (`nbconvert --execute`, 0 errors).
+- Finding filed: [[analysis/pa-stays-below-spp-except-negative-price-hours]].
+
 ## 03_model — modeling on top of 02_analysis outputs
-### 01_regression.ipynb   [model · wip]
-- **Purpose (as of 2026-07-17, human edit):** the human removed the Random Forest cell as
-  requested — but in doing so also removed **all** modeling cells (OLS via statsmodels,
-  sklearn `LinearRegression`, and the Random Forest section), not just the broken one. The
-  notebook, now titled "linear regression model dataset" (5 cells), currently only **builds
-  and exports the merged modeling dataset** — it does not fit any model. Flagged in the log
-  in case this wasn't the intent (vs. splitting dataset-prep from modeling into separate
-  notebooks going forward).
+### 01_regression_data.ipynb   [model · stable]  (renamed 2026-07-21 from `01_regression.ipynb`)
+- **Purpose (rebuilt 2026-07-21, per [[sources/2026-07-20_meeting-notes]]):** builds and
+  exports the merged modeling dataset, now via duckdb (was pandas), with two new columns —
+  `time_of_day` and `total_load` — and the ERA5 **hourly** temperature feed (was the old daily
+  GRIDMET file). Still fits no model itself (titled "linear regression model dataset"); the
+  fit moved to a companion R script, `ERCOT regression.Rmd` (see below). Also gained 3
+  correlation-plot cells (scatter by year, overall Pearson matrix, per-year Pearson matrices).
 - **In:** `2_cleaned/generation/hourly_solar_wind_generation_2020_2025.parquet`,
   `2_cleaned/load/total_load_20201231_20260526.csv`,
   `2_cleaned/generation/ERCOT nonRE capacity 2020-2025.csv`,
   `2_cleaned/rtm_price/rtm_price_aggregated_2021_2025.csv`,
   `3_analysis/ng_price/ng_prices_monthly.csv`,
-  `2_cleaned/weather/Texas daily average temp HDD CDD 2020-2025.csv`. **Out:**
-  `01_data/4_model/ercot_regression_model_dataset.csv` (columns: `datetime, year, season,
-  rtm_price, spare_capacity, ng_price, degree_days`; Uri window `2021-02-13`–`2021-02-25`
-  excluded via the SQL `WHERE` clause). **Methods:** duckdb merge only (no modeling methods
-  remain in this notebook). **Wiki:** [[feature-engineering]],
+  `2_cleaned/weather/Texas_hourly_temp_2021_2025.csv` (**changed from the daily GRIDMET file**).
+  **Out:** `01_data/4_model/ercot_regression_model_dataset.csv` — 9 cols now
+  (`datetime, year, time_of_day, season, rtm_price, total_load, spare_capacity, ng_price,
+  degree_days`), 43,534 rows, 1 null row (`spare_capacity`/`ng_price`/`degree_days`), Uri
+  window excluded via SQL `WHERE`. **Methods:** duckdb merge, pandas/matplotlib correlation
+  plots. **Wiki:** [[feature-engineering]],
   [[analysis/spare-capacity-correlates-with-rtm-price]]
-- Historical modeling results (from the version of this notebook that existed earlier
-  2026-07-17, before the human's edit — **no longer reproducible from the current code**,
-  kept here for provenance only): OLS R²=0.552, `spare_capacity` coef ≈+115 (p<0.001),
-  `ng_price` coef ≈+6.3 (p<0.001), `degree_days` coef ≈−0.44 (p<0.001), `year` not
-  significant; sklearn `LinearRegression` R²=0.40; Random Forest failed
-  (`ValueError: continuous is not supported`, `accuracy_score` used on a continuous target).
-- **Last run: could not fully verify 2026-07-17.** `OUT_DIR.mkdir()` (no `exist_ok=True`)
-  fails on any re-run once `01_data/4_model/` exists, which it already does; the sandbox's
-  file-write protections wouldn't allow clearing that directory to force a clean run. The
-  4 remaining cells (imports/paths, load, duckdb merge, CSV write) are logically identical to
-  cells that already passed a fresh `nbconvert --execute` earlier the same session as part of
-  the fuller notebook — circumstantial evidence they'd still pass — but per the status-label
-  rule this is **not** promoted to `stable` without an actual fresh run. Marked `wip`.
+- ✅ **`OUT_DIR.mkdir()` non-idempotency issue (flagged 2026-07-17) resolved:** the `.mkdir()`
+  call is gone from the current notebook (the directory is now permanent) — no longer blocks
+  a clean re-run.
+- **Companion R script, `03_notebooks/03_model/ERCOT regression.Rmd`** (new, not part of the
+  `nbconvert`-checked notebook set): reads `ercot_regression_model_dataset.csv`, correlation
+  matrices (overall + per-year), and fits `mod1 <- lm(rtm_price ~ spare_capacity + ng_price +
+  degree_days + factor(year) + factor(season) + time_of_day, df)` + `vif(mod1)`. **Not
+  executed this session** — no R runtime in the sandbox, no knitted HTML/output on disk to
+  check against; its formula and presence are confirmed from source only.
+- Historical Python modeling results (from the version of this notebook that existed before
+  the 2026-07-17 human edit — **not reproducible from the current code**, kept for
+  provenance): OLS R²=0.552, `spare_capacity` coef ≈+115 (p<0.001), `ng_price` coef ≈+6.3
+  (p<0.001), `degree_days` coef ≈−0.44 (p<0.001), `year` not significant; sklearn
+  `LinearRegression` R²=0.40; Random Forest failed (continuous target via `accuracy_score`).
+- ✅ **`degree_days` UTC/Central misalignment fixed 2026-07-24** — added a UTC→
+  `America/Chicago` conversion (+ DST fold averaging) right after `df_temp = pd.read_csv(TEMP_PATH)`,
+  before the duckdb join. The raw ERA5 scraper/files are untouched (stay UTC, per the human's
+  instruction not to re-touch already-scraped data) — the fix lives here, at the point of
+  use. Null rows in `degree_days` went from 1 → 9 (DST-edge join misses, out of 43,534 rows).
+  See [[weather-hdd-cdd]], [[feature-engineering]]. `mod1` (the R regression) still needs a
+  fresh run to pick up the corrected values.
+- **Last run: 2026-07-24 — PASS** (fresh `nbconvert --execute`, 0 errors, after the timezone
+  fix; `time_of_day`/`total_load` columns and the corrected `degree_days` confirmed in the
+  output CSV).
 
 ---
 
