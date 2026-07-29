@@ -10,9 +10,10 @@ library(dplyr)
 library(corrplot)
 library(car)
 ```
+
 ```{r}
 df <- read_csv("../../01_data/4_model/model dataset.csv", col_types = cols(datetime = col_skip(), year = col_character()))
-head(df)
+tail(df)
 ```
 
 ```{r}
@@ -43,9 +44,13 @@ cor_by_year <- df %>%
 cor_by_year
 ```
 ```{r}
-mod1 <- lm(rtm_price ~ spare_capacity + ng_price + degree_days + factor(year) + factor(season) + time_of_day, df)
+df_sub <- df[df$rtm_price > 2.3, ]
+mod1 <- lm(log(rtm_price) ~ spare_capacity + ng_price + degree_days + factor(year) + factor(season) + factor(time_of_day), df_sub)
 summary(mod1)
 plot(mod1)
+```
+```{r}
+df
 ```
 
 ```{r}

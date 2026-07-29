@@ -1,7 +1,7 @@
 ---
 title: Index
 type: overview
-updated: 2026-07-24
+updated: 2026-07-29
 ---
 
 # Wiki Index
@@ -39,9 +39,10 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
 - [[natural-gas-prices]] — marginal fuel cost (Henry Hub, Citygate).
 - [[weather-hdd-cdd]] — temperature → load. Two sources now: **GRIDMET** (daily, per-county,
   legacy, still used by `08_hdd_eda`) and **ERA5** (hourly, Texas-wide, added 2026-07-21 for
-  modeling). ERA5's native UTC timestamps were being joined without conversion in the
-  spare-capacity regression (~5–6h misalignment on `degree_days`) — **fixed 2026-07-24** at
-  the notebook level (`06_spare_capacity`, `01_regression_data`), scraper/raw files untouched.
+  modeling). ERA5 scraper **rewritten 2026-07-29** (`era5_ercot_temp.py`) — now delivers
+  tz-naive CPT hour-ending timestamps directly (was UTC); DST handled (fall-back averaged,
+  spring-forward gap aligned with ERCOT). The prior notebook-level UTC→CPT conversion
+  (`06_spare_capacity`, `01_regression_data`, fixed 2026-07-24) is now redundant.
 - [[mid-term-load-forecast]] — forecast error channel; now also carries 7 alt-model
   load-prediction features (A3/A6/E/E1/E2/E3/M — each a different weather-forecast input,
   answered 2026-07-07; EDA notebook `09_mtlf_models_eda` **deleted 2026-07-24** — a different
@@ -56,8 +57,9 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
 - [[data-extraction-guide]] — API auth, endpoints, pitfalls, timeouts, EMIL, jobs convention.
 - [[extraction-scripts]] — script architecture: 8 ERCOT API extractors (incl.
   `ercot_mtlf_day_ahead` 2026-07-14 and `ercot_7d_load_fcast_wzn_archive` 2026-07-22, NP3-561-CD)
-  vs excel→parquet parsers, plus a new non-ERCOT-scraper grouping (`era5_ercot_temp_2021-2025.py`,
-  2026-07-21, Copernicus CDS hourly Texas temperature — ⚠️ UTC timestamps unconverted).
+  vs excel→parquet parsers, plus a non-ERCOT-scraper grouping (`era5_ercot_temp.py`,
+  rewritten 2026-07-29 with CPT-aligned timestamps — replaces the old UTC-only
+  `era5_ercot_temp_2021-2025.py`).
 - [[analysis-workflow]] — 5-step raw→cleaned→analysis pipeline mapped to the repo + lineage.
 - [[feature-engineering]] — adder demand, CDD/HDD, capacity factor, net load, spare-capacity ratio.
 - [[notebook-catalog]] — architecture of the `00_check`/`01_eda`/`02_analysis` notebooks

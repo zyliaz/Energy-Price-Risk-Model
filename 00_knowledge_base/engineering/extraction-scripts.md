@@ -4,7 +4,7 @@ type: engineering
 tags: [data, extraction, scripts, methods, reference]
 status: stable
 sources: 1
-updated: 2026-07-24
+updated: 2026-07-29
 ---
 
 # Extraction Scripts (architecture)
@@ -51,7 +51,7 @@ extractors share one core, `ercot_common.py` (`ERCOTAuth`, `ERCOTAPIClient`,
 
 | Script | Data | Source | Notes |
 |---|---|---|---|
-| `era5_ercot_temp_2021-2025.py` | Hourly Texas-statewide mean temperature, 2021–2025 | **ERA5** (Copernicus Climate Data Store reanalysis) | Added 2026-07-21. Downloads per-year `.nc` (skips if already on disk), masks the grid to the TX state boundary, averages, converts K→°F, validates (schema/NaN/dupe/missing-hour/range checks), writes `2_cleaned/weather/Texas_hourly_temp_2021_2025.csv`. Needs `CDS_API_URL`/`CDS_API_KEY` in `.env`. ⚠️ Output `datetime` is UTC, not this repo's HE-Central convention — see [[data-extraction-guide]] pitfall #15, [[weather-hdd-cdd]]. Checked via `00_check/02_era5_ercot_temp.ipynb`. |
+| `era5_ercot_temp.py` | Hourly Texas-statewide mean temperature, 2021–2025 | **ERA5** (Copernicus Climate Data Store reanalysis) | **Rewritten 2026-07-29** (replaces `era5_ercot_temp_2021-2025.py`, which remains idle). Defines the extraction range in **Central Prevailing Time** (CPT = `America/Chicago`), converts to UTC for the CDS API requests, downloads full UTC calendar years + a small boundary request for the tail-end hours that spill past `END_YEAR` (Option A: two requests per boundary, no cartesian over-coverage), combines `.nc` files via `xr.concat`, masks to TX boundary, averages, converts UTC→CPT, trims to the exact CPT window. Timestamps shifted +1h to **hour-ending** to match ERCOT convention; DST fall-back duplicates averaged via `groupby.mean()`, spring-forward gap aligned (ERCOT skips HE 03, ERA5+HE-shift skips HE 03 — same gap). Output columns: `datetime` (tz-naive CPT, hour-ending) + `tx_temp` (°F). Validates (schema/NaN/dupe/missing-hour/range) against a CPT-aware HE expected range. Writes `2_cleaned/weather/Texas_hourly_temp_2021_2025.csv`. Needs `CDS_API_URL`/`CDS_API_KEY` in `.env`. Checked via `00_check/02_era5_ercot_temp.ipynb` (also rewritten with same CPT-first + HE pattern). |
 
 **2) Excel→parquet parsers → `02_scripts/2_parsers/`** (no network; consolidate local files)
 
