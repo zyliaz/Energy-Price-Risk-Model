@@ -3,8 +3,8 @@ title: Notebook Catalog (architecture)
 type: engineering
 tags: [methods, notebooks, reference]
 status: developing
-sources: 0
-updated: 2026-07-24
+sources: 1
+updated: 2026-07-31
 ---
 
 # Notebook Catalog (architecture)
@@ -437,6 +437,15 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 - **Last run: 2026-07-24 — PASS** (fresh `nbconvert --execute`, 0 errors, after the timezone
   fix; `time_of_day`/`total_load` columns and the corrected `degree_days` confirmed in the
   output CSV).
+- **Update (2026-07-31):** Output CSV renamed `raw_model_dataset.csv`; new column `ng_price_monthly` (renamed from `ng_price` to clarify monthly settlement) and `cap_threshold` (binary: `spare_capacity > 0.9`, captures adder threshold effect); `perc_load` added alongside `total_load`. Fresh `nbconvert --execute` **PASS (2026-08-07 re-verified)**. 
+- **Last run: 2026-08-07 — PASS** (re-execution confirms notebook still passing with all dependencies satisfied).
+
+### 02_linear_regression.Rmd   [model · developing]
+- **Purpose (2026-07-30):** Companion R script for exploratory analysis and linear regression. Reads `raw_model_dataset.csv`, computes summary statistics, and performs correlation matrices (overall Pearson, year-stratified). Prepares for the model fit.
+- **In:** `01_data/4_model/raw_model_dataset.csv`. **Out:** correlation plots (corrplot), summary tables.
+- **Methods:** R / readr / dplyr / corrplot / car. **Wiki:** [[feature-engineering]]
+- **Status:** developing — script created, not yet formally executed/verified in this session (no R runtime in sandbox to re-run). Inspection confirms imports and structure. Comparison code also includes `cor_by_year` analysis (correlation broken out per year) and a regression stub.
+
 
 ---
 

@@ -3,8 +3,8 @@ title: Feature Engineering
 type: engineering
 tags: [methods, features]
 status: developing
-sources: 5
-updated: 2026-07-24
+sources: 6
+updated: 2026-09-02
 ---
 
 # Feature Engineering
@@ -14,12 +14,14 @@ consistent.
 
 | Feature | Definition | Notes |
 |---|---|---|
-| **Adder demand** | load forecast − actual load | Available from 2021. Proxy for unexpected tightness. See [[mid-term-load-forecast]]. |
-| **CDD** | actual temp − 65°F (cooling threshold) | Dominant in Texas (cooling load). See [[weather-hdd-cdd]]. |
-| **HDD** | 65°F − actual temp (heating threshold) | Smaller in TX; rising as heating electrifies. |
+| **Adder demand** | load forecast − actual load | Available from 2021. Proxy for unexpected tightness. See [[mid-term-load-forecast]]. ⚠️ No correlation with RTM price (dropped from modeling 2026-07-27). |
+| **CDD / HDD** | actual temp − 65°F (cooling) / 65°F − actual temp (heating) | Must use **hourly resolution, full decimal precision** (not rounded). See [[weather-hdd-cdd]]. |
 | **Capacity factor (C.F.)** | wind/solar production ÷ capacity | From production series. See [[wind-power-production]]. |
 | **Net load** | load − (wind + solar) | **Preferred modeling target (2026-07-01)** — expected to model price better than raw load. Combined wind+solar series now exists ([[ercot-data-products]]) but no notebook has computed net load from it yet. |
-| **Time of day** | hour-of-day, categorical | Added 2026-07-21 to the regression dataset (`01_regression_data`) per [[sources/2026-07-20_meeting-notes]]. |
+| **Time of day** | hour-of-day, categorical (discrete factor) | Added 2026-07-21. Retained as factor (not continuous) for modeling — captures time-of-day peak/off-peak effects. |
+| **NG price (monthly)** | Henry Hub natural gas $/MMBtu | **Renamed 2026-07-31** to `ng_price_monthly` to clarify intra-daily constancy (monthly settlements); was `ng_price`. See [[natural-gas-prices]]. |
+| **Spare capacity** | `(load − renewable_gen) / non_re_capacity` | Correlates strongly with log(price) (R²=0.552 OLS, spare_capacity coef ≈+115). Computed in `06_spare_capacity`. ⚠️ Caveat: ~25% of thermal capacity (coal/nuclear/diesel) excluded; see [[sources/2026-07-07_research-update]]. |
+| **Cap threshold** | `spare_capacity > 0.9`, categorical binary | Added 2026-07-27. Captures adder activation effect; avoids modeling adders explicitly (pre-Dec-2025 adders built-in at threshold). |
 
 ## Datetime convention — project standard: **hour-ending (HE)**
 Every hourly/merged series uses **hour-ending** timestamps. A row stamped `HH:00` covers the
@@ -51,6 +53,20 @@ notebooks); `organize_rtm_lmp_2026.py` builds `date + DeliveryHour` (not `−1`)
 were removed from notebooks 02/03. The 15-min adder parquet is unchanged (interval-beginning).
 Aligned adder-vs-RTM correlation sits at its shift maximum (0.831), confirming alignment.
 
+## Features evaluated and removed
+
+**Dropped 2026-08-03:**
+- **`total_load` and `perc_load`:** Both highly correlated with `spare_capacity` (which itself is `(load − renewable_gen) / capacity`). Removed to avoid multicollinearity in regression; spare_capacity alone captures load effects.
+
+## Modeling refinements (deferred)
+
+Per [[sources/2026-08-03_research-meeting]], experimental tweaks proposed for future exploration:
+
+- **Binary heating/cooling variable:** Categorical indicator (heating months vs. cooling months) to try in place of the multi-category `season` variable.
+- **Tail-behavior models:** Explore logistic, polynomial, or piecewise regression for lower price tail.
+- **Log-10 loss function:** Alternative to log-scale linear regression.
+- **Year baseline (2025):** Use 2025 as the reference year.
+
 ## Open / to-add
 - Price-volatility target definition (see [[price-volatility]]) — rolling std, spike flags.
 - Region/zone aggregation using mappings in [[load-zones]].
@@ -70,22 +86,19 @@ Aligned adder-vs-RTM correlation sits at its shift maximum (0.831), confirming a
   (2026-07-07, still open): `non_re_capacity` covers gas-CC + gas-other only —
   coal/nuclear/diesel (~25% of thermal capacity) are excluded, so the ratio undercounts total
   firm capacity. See [[sources/2026-07-07_research-update]].
-  - **Regression status (updated 2026-07-24):** `03_notebooks/03_model/01_regression.ipynb`
-    was renamed `01_regression_data.ipynb` and rebuilt (per [[sources/2026-07-20_meeting-notes]]):
-    it's now purely a **dataset-export + correlation-plot** notebook (duckdb merge, `time_of_day`
-    and `total_load` columns added; `01_data/4_model/ercot_regression_model_dataset.csv`,
-    9 cols, 43,534 rows, 9 null rows in `degree_days` — up from 1 after the timezone fix below
-    added a few DST-edge join misses) — fresh `nbconvert --execute` **PASS 2026-07-24** (the
-    prior `OUT_DIR.mkdir()` non-idempotency issue is resolved; the `.mkdir()` call was removed
-    since the directory now persists). The actual model fit moved to a companion R script,
-    `03_notebooks/03_model/ERCOT regression.Rmd`: `mod1 <- lm(rtm_price ~ spare_capacity +
-    ng_price + degree_days + factor(year) + factor(season) + time_of_day, df)`. **Not
-    independently verified this session** — no R runtime in the sandbox, no knitted output on
-    disk. The earlier Python OLS finding (R²=0.552, `spare_capacity` coef ≈+115, `ng_price`
-    coef ≈+6.3, `degree_days` coef ≈−0.44, all p<0.001) predates both the `time_of_day`
-    addition and the timezone fix, so treat it as historical/provisional, not reproducible
-    from the notebook as currently saved. Finding filed:
-    [[analysis/spare-capacity-correlates-with-rtm-price]].
+  - **Regression status (updated 2026-09-02):** `01_regression_data.ipynb` is a
+    **dataset-export + correlation-plot** notebook (duckdb merge via hourly ERCOT data sources;
+    exports `01_data/4_model/raw_model_dataset.csv`; re-verified PASS 2026-08-07). Companion R script `02_linear_regression.Rmd`
+    performs exploratory correlation/year-stratified analysis. Load features (`total_load`, `perc_load`) removed
+    2026-08-03 due to high collinearity with spare_capacity.
+  - **Data cutoff (2026-09-02):** modeling uses **2021–2025 only**, with the **pre-Dec-2025
+    (ORDC) adder scheme**. The post-Dec-2025 RTC+B adder data exists (cleaned in
+    `06_new_pa_cleaning`, EDA'd in `07_new_pa_distribution` / `03_new_pa_activation`) but is
+    excluded from regression because several upstream inputs lack 2026 coverage: generation
+    (solar+wind parquet ends Dec 2025), non-RE capacity (no 2026 row), ERA5 hourly temperature
+    (ends Jan 2026), peak hours (ends Dec 2025), and NG price (partial, only Jan–Feb 2026).
+    Extending to the post-2025 regime requires re-running those scrapers / adding 2026 data
+    first.
   - ⚠️ **Degree-days / spare-capacity collinearity (flagged 2026-07-20, open):** both
     `degree_days` and `spare_capacity` are driven by load, so they're correlated with each
     other, not just with price. Per [[sources/2026-07-20_meeting-notes]], because the model
@@ -110,4 +123,5 @@ Aligned adder-vs-RTM correlation sits at its shift maximum (0.831), confirming a
 - [[sources/2026-07-01_research-meeting]] · [[sources/2026-07-07_research-update]] ·
   [[sources/2026-07-13_weekly-meeting-spare-capacity]] ·
   [[sources/2026-07-14_capacity-model-research-update]] ·
-  [[sources/2026-07-20_meeting-notes]]
+  [[sources/2026-07-20_meeting-notes]] · [[sources/2026-07-27_modeling-strategy-update]] ·
+  [[sources/2026-08-03_research-meeting]]

@@ -1,0 +1,148 @@
+---
+title: "ERCOT Power Prices"
+output: html_document
+date: "2026-07-17"
+---
+
+```{r, include = FALSE}
+library(readr)
+library(dplyr)
+library(corrplot)
+library(car)
+```
+
+```{r}
+df <- read_csv("../../01_data/4_model/raw_model_dataset.csv", col_types = cols(datetime = col_skip()))
+df
+```
+
+```{r}
+summary(df)
+```
+
+```{r}
+# mark categorical variables
+df$year <- factor(df$year)
+# set 2025 as base year
+df$year <- relevel(df$year, ref = "2025")
+
+df$season <- factor(df$season)
+df$time_of_day <- factor(df$time_of_day)
+df$peak_hour <- factor(df$peak_hour)
+df$heating_dd <- factor(df$heating_dd)
+df$cap_threshold <- factor(df$cap_threshold)
+```
+
+```{r}
+# check correlation among numerical variables
+
+cor_matrix <- cor(df %>% select(where(is.numeric)), use = "complete.obs")
+print(cor_matrix)
+
+corrplot(cor_matrix, method ="circle", addCoef.col=TRUE)
+
+```
+
+```{r}
+cor_by_year <- df %>%
+  group_by(year) %>%
+  group_split() %>%
+  setNames(unique(df$year)) %>%
+  lapply(function(x) {
+    x %>% select(where(is.numeric)) %>% cor(method = "pearson")
+  })
+cor_by_year
+```
+```{r}
+# cut out values for log(rtm_price) < 0
+df_sub <- df[df$rtm_price > 2.3, ]
+```
+
+```{r, include=False}
+# stepwise regression
+
+# Fit the full model 
+Full <- lm(log10(rtm_price) ~ spare_capacity + ng_price_monthly + season + 
+    time_of_day + cap_threshold + year + degree_days + peak_hour + heating_dd, data = df_sub)   
+# Find the MSE for the full model 
+MSE <- (summary(Full)$sigma)^2 
+# Start with a model with NO predictors 
+none <- lm(log10(rtm_price) ~ 1, data = df_sub) 
+# DON’T specify a direction 
+step(none, scope = list(upper=Full), scale=MSE)
+```
+
+```{r}
+mod_selected <- lm(log10(rtm_price) ~ spare_capacity + ng_price_monthly + 
+    season + cap_threshold + time_of_day + heating_dd + degree_days + 
+    year + peak_hour, data = df_sub)
+summary(mod_selected)
+plot(mod_selected)
+```
+
+```{r}
+# cross validation steps
+library(caret)
+library(randomForest)
+
+# set threshold for capacity
+df_sub$cap_threshold <- df_sub$spare_capacity > 0.9
+
+# 1. Split into train/test
+set.seed(42)
+train_idx <- createDataPartition(df_sub$rtm_price, p = 0.8, list = FALSE)
+train_data <- df_sub[train_idx, ]
+test_data  <- df_sub[-train_idx, ]
+
+# 2. Define cross-validation scheme (5-fold CV)
+ctrl <- trainControl(
+  method = "cv",
+  number = 5,
+  savePredictions = "final"
+)
+
+# 3. Train model with CV
+set.seed(42)
+model <- train(
+  log10(rtm_price) ~ spare_capacity + ng_price_monthly + 
+    season + cap_threshold + time_of_day + heating_dd + degree_days + 
+    year + peak_hour,
+  data = train_data,
+  method = "lm",
+  trControl = ctrl
+)
+
+print(model$results)
+
+# 4. Evaluate on held-out test set
+pred_test <- predict(model, newdata = test_data)
+postResample(pred_test, log10(test_data$rtm_price))   # RMSE, Rsquared, MAE
+```
+
+```{r}
+# plot train and test predictions
+train_preds <- predict(model, newdata = train_data)
+test_preds  <- predict(model, newdata = test_data)
+
+plot_df <- bind_rows(
+  data.frame(actual = log10(train_data$rtm_price), predicted = train_preds, set = "Train", spare_capacity = train_data$spare_capacity),
+  data.frame(actual = log10(test_data$rtm_price), predicted = test_preds, set = "Test", spare_capacity = test_data$spare_capacity)
+)
+
+ggplot(plot_df, aes(x = actual, y = predicted, color = set)) +
+  geom_point(size = 0.5, alpha = 0.8) +
+  coord_fixed(xlim = c(0.3, 3.8), ylim = c(0.3, 3.8)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray40") +
+  scale_color_manual(values = c("Train" = "#1f77b4", "Test" = "#d62728")) +
+  labs(title = "Predicted vs. Actual log10(rtm Price)", x = "Actual", y = "Predicted", color = "Data Set")
+# actual
+ggplot(plot_df, aes(x = spare_capacity, y = actual, color = set)) +
+  geom_point(size = 0.5, alpha = 0.8) +
+  scale_color_manual(values = c("Train" = "#1f77b4", "Test" = "#d62728")) +
+  labs(title = "Actual log10(rtm Price) vs. spare capacity metric", x = "spare capacity metric", y = "actual price (log10)", color = "Data Set")
+# predicted
+ggplot(plot_df, aes(x = spare_capacity, y = predicted, color = set)) +
+  geom_point(size = 0.5, alpha = 0.8) +
+  scale_color_manual(values = c("Train" = "#1f77b4", "Test" = "#d62728")) +
+  labs(title = "Predicted log10(rtm Price) vs. spare capacity metric", x = "spare capacity metric", y = "predicted price (log10)", color = "Data Set")
+```

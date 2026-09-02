@@ -1,7 +1,7 @@
 ---
 title: Index
 type: overview
-updated: 2026-07-29
+updated: 2026-08-07
 ---
 
 # Wiki Index
@@ -116,6 +116,13 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
 - [[sources/2026-07-20_meeting-notes]] — reframes the model's purpose as scenario
   **simulation**; specifies hourly degree-days, `time_of_day`, and an R regression; surfaces
   the degree-days/spare-capacity collinearity-via-load issue.
+- [[sources/2026-07-27_modeling-strategy-update]] — modeling architecture finalized: parametric
+  (not iterative) for simulation; cap_threshold feature; load-forecast-error dropped; price
+  lower-tail removed; full-precision temperature; feature decisions on load/time/lasso.
+- [[sources/2026-08-03_research-meeting]] — model refinement: log-10 scale loss, baseline year
+  2025, binary heating/cooling variable, tail-behavior models (logistic/piecewise), feature
+  decisions (drop perc_load, time-of-day fits well hours 16–21, degree-days still needed despite
+  collinearity).
 
 ## Analysis (filed findings — one note per notebook, named by finding)
 - [[analysis/ng-hub-correlation-breaks-uri-aug2023]] — NG benchmarks track monthly except
@@ -129,10 +136,10 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
 - [[analysis/load-price-correlation-is-seasonal]] — log(price)–load correlation concentrates
   in months 1–2 and 5–10. (`05_load_rtm_price_plot`)
 - [[analysis/mtlf-overpredicts-at-high-load-price]] — forecast error alone weak; MTLF
-  over-predicts at high load + high price. (`00_load_forecast_rtm_correlation_wip`)
+  over-predicts at high load + high price. (`00_load_forecast_rtm_correlation`)
 - [[analysis/cooling-demand-rising-with-population]] — U-shaped temp–load; CDD side rose
   ~50% 2021→2022 with population. (`08_hdd_eda`)
 - [[analysis/spare-capacity-correlates-with-rtm-price]] — `(load−renewable_gen)/
   non_re_capacity` correlates strongly with `log(rtm_price)`; OLS R²=0.552 with NG price +
   degree-days added (regression notebook uncommitted, cached results only).
-  (`06_spare_capacity`, `03_model/01_regression`)
+  (`06_spare_capacity`, `03_model/01_regression_data`)
