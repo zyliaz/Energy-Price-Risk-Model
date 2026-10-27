@@ -4,7 +4,7 @@ type: engineering
 tags: [methods, notebooks, reference]
 status: developing
 sources: 1
-updated: 2026-07-31
+updated: 2026-10-16
 ---
 
 # Notebook Catalog (architecture)
@@ -147,6 +147,32 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 - **Last run: 2026-07-22 — PASS** (fresh `nbconvert --execute`, 0 errors; one-day sample = 216
   postings downloaded/parsed in 9.5 s → 4,608 rows, 24/24 delivery-hours, 0 nulls).
 
+### 05_np3_233_cd_outage_cap_endpoint_check   [check · developing]
+- **Purpose:** Endpoint check for **NP3-233-CD** (Hourly Resource Outage Capacity). Probes
+  live API + archive, discovers the archive format change (168→192 rows between 2021 and
+  2022), verifies live-vs-archive identity for the 192-row period, and documents the
+  dedup rule: each 168-row window starts at the next hour after posting.
+- **In:** Public API (live `np3-233-cd/hourly_res_outage_cap` + archive `NP3-233-CD`).
+  **Out:** `01_data/1.2_raw_api/np3_233_cd_sample_20210216_1201.csv` (sample).
+  **Methods:** requests, zipfile, pandas. **Wiki:** [[ercot-data-products]],
+  [[data-extraction-guide]]
+- Requires `.env` credentials.
+- **Last run: 2026-09-17 — PASS** (cells executed interactively; endpoint verified, format
+  change documented).
+
+### 06_np3_233_cd_uri_forecast_drift   [check · stable]
+- **Purpose:** Quantifies forecast drift in NP3-233-CD during Winter Storm Uri (Feb 12–17,
+  2021) vs a normal baseline week (Jan 11–15, 2021). Compares D−1 hour-23 forecast against
+  the last-available (~1h-ahead) forecast for each (Date, HourEnding). Includes retry logic
+  for 429 rate limits.
+- **In:** Public API archive `NP3-233-CD` (288 docs: 144 Uri + 144 baseline). **Out:**
+  `01_data/3_analysis/np3_233_cd_uri_forecast_drift.png` (trajectory + drift plot).
+  **Methods:** requests (with exponential backoff), zipfile, pandas, matplotlib.
+  **Wiki:** [[ercot-data-products]], [[winter-storm-uri]]
+- Key results: Uri mean drift 35.1%, max 158.4% (Feb 15); baseline mean drift 4.2%,
+  max 22.3%. Feb 15 D−1 forecast ~12,000 MW vs real-time ~31,000 MW.
+- **Last run: 2026-09-17 — PASS** (executed via nbclient, 0 errors, plot confirmed on disk).
+
 ## 01_eda — single-source clean + explore
 ### 00_rtm_price_eda   [eda · stable]
 - **Purpose:** Clean & aggregate RTM SPP; produce the canonical RTM price series.
@@ -235,6 +261,43 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   replacement, not yet built; not simply dropped. Its ensemble-mean feature had already been
   dropped 2026-07-09 (see the prior entry, now superseded). See [[feature-engineering]],
   [[mid-term-load-forecast]].
+
+### 09_outage_eda   [eda · developing]  (cleaning notebook, 2026-09-26)
+- **Purpose:** Clean NP3-233-CD into the hourly 1h-ahead `outage_MW` series for the
+  spare_capacity_v2 denominator. It keeps only `totalResourceMW` (zone columns are NaN before
+  2021-05-27 17:01), builds the HE `datetime`, selects the latest posting before each hour
+  ends, trims the forecast tail after the last posting, then does summary stats and an
+  hourly line chart.
+- **In:** `1.2_raw_api/outage/outage_cap_archive_20210101_20260924.parquet`.
+  **Out:** `01_data/2_cleaned/outage/archive_1h_ahead_outage_20210101_2026_0924.parquet`
+  (50,219 rows; `datetime`, `totalResourceMW`).
+- **Result:** no gaps or duplicates; lead time median 58.2 min. Validated 2026-09-26 against an
+  independent rebuild: identical except 2024-07-23 HE 17 = 0 MW, which comes from the one
+  all-zero ERCOT posting (not yet filtered in the notebook). Selection rule + numbers:
+  [[feature-engineering]]; source quirks: [[ercot-data-products]].
+- **Last run:** 2026-09-26 (outputs present). **Wiki:** [[ercot-data-products]] · [[feature-engineering]]
+
+### 09.1_outage_live_archive_comparison   [eda · wip]  (the former `09_outage_eda copy`)
+- **Purpose (per header):** same cleaning spec, intended for the live-vs-archive comparison.
+- **In:** archive parquet + live `outage_cap_20231210_20260923.parquet`.
+- **Done so far:** per-zone NaN profile only (3,520 / 50,202 postings = 7.0% lack zone values,
+  all 2021-01-01 → 2021-05-27). Cells from §3 on are still load-EDA carry-over (they reference
+  a `df` with load columns and write `load_by_LZ_*` / `total_load_*` into `2_cleaned/outage/`).
+  The live parquet needs dedup before comparison (see [[ercot-data-products]]).
+- **Last run:** partial. **Wiki:** [[ercot-data-products]]
+
+### 10_renewable_gen_eda   [eda · wip]  (new, untracked; file dated 2026-10-15)
+- **Purpose:** inner-merge hourly RTM price, solar+wind generation and total load on `datetime`,
+  export the merged table, and plot renewable generation vs RTM price (scatter) and both series
+  over time. Single-pass plotting notebook; no stated finding.
+- **In:** `2_cleaned/generation/hourly_solar_wind_generation_2020_2025.parquet`,
+  `2_cleaned/rtm_price/rtm_price_aggregated_2021_2025.csv`,
+  `2_cleaned/load/total_load_20201231_20260526.csv`. **Out:**
+  `3_analysis/additional/agg_price_load_REgen_2021_2025.csv` (cols `datetime`, `avg_rtm_price`,
+  `renewable_gen`, `total_load`; file present). **Methods:** pd.merge, matplotlib.
+- **Last run:** not re-executed (no nbconvert in the sync environment); cached outputs only.
+  The y-label of the third plot reads "RRTM Price" (typo in the notebook). **Wiki:**
+  [[wind-power-production]] · [[feature-engineering]]
 
 ## 02_analysis — multi-source interactions
 ### 00_load_forecast_rtm_correlation   [analysis · stable]
@@ -345,7 +408,9 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 ### 05_load_rtm_price_plot   [analysis · stable]
 - **Purpose:** RTM price vs load, faceted by year.
 - **In:** `total_load.csv`, `rtm_price_aggregated.csv` (2_cleaned). **Methods:** groupby, merge, scatter. **Wiki:** [[load-and-demand]], [[price-volatility]]
-- **Last run: 2026-07-03 — PASS.**
+- **Last run: 2026-07-03 — PASS.** Edited 2026-10-14 (uncommitted): unused `std_rtm_price`
+  column dropped from the price table and the scatter restyled (larger ticks, colorbar); not
+  re-executed, so the PASS stamp predates these edits.
 
 ### 06_spare_capacity   [analysis · stable]
 - **Purpose:** Replaces `06_metric_nonvariable_load_capacity` (deleted 2026-07-14, commit
@@ -446,6 +511,53 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 - **Methods:** R / readr / dplyr / corrplot / car. **Wiki:** [[feature-engineering]]
 - **Status:** developing — script created, not yet formally executed/verified in this session (no R runtime in sandbox to re-run). Inspection confirms imports and structure. Comparison code also includes `cor_by_year` analysis (correlation broken out per year) and a regression stub.
 
+### 03_v2_data_prep.ipynb   [model · stable]
+- **Purpose (2026-09-15):** Builds the v2 modeling dataset by decomposing RTM system price
+  into base energy + per-component ORDC adders. Reads the existing `raw_model_dataset.csv`
+  covariates and the **cleaned** hourly adder file
+  (`2_cleaned/price_adders/price_adders_hourly_20200101_20251204.csv`, produced by
+  `04_price_adders_pre2025_cleaning`), inner-joins on datetime, excludes Uri, and exports
+  with new columns for the decomposition.
+- **In:** `01_data/4_model/raw_model_dataset.csv`,
+  `01_data/2_cleaned/price_adders/price_adders_hourly_20200101_20251204.csv`.
+  **Out:** `01_data/4_model/v2_model_dataset.csv` — 42,858 rows, 19 cols (all v1 covariates +
+  `rtm_price`, `base_energy`, `total_adder`, `RTRSVPOR`, `RTRSVPOFF`, `RTRDP`,
+  `rtrsvpor_active`, `rtrsvpoff_active`, `rtrdp_active`).
+- **Methods:** pandas merge. **Wiki:** [[ordc-price-adders]], [[feature-engineering]]
+- **Scope:** pre-RTC+B only (≤ 2025-12-03); Uri excluded (2021-02-13 to 2021-02-25).
+- **Last run: 2026-09-15 — PASS** (executed via nbclient, output confirmed 42,858 rows, 0 NAs,
+  decomposition sanity check passed: `base_energy + total_adder == rtm_price`).
+
+### 04_v2_decomposed_model.Rmd   [model · developing]
+- **Purpose (2026-09-15):** V2 decomposed price model — fits 7 sub-models: (A) base energy
+  OLS in log10, (B) 3 logistic activation gates (one per adder component: RTRSVPOR, RTRSVPOFF,
+  RTRDP), (C) 3 magnitude OLS in log10 on the active subset (with Duan's smearing
+  back-transform). Recombines in price space:
+  `predicted = base + Σ P(component>0) × E[component | active]`. Includes v1-vs-v2 comparison
+  table (overall + stratified by adder-active, top-5%, top-1%), ROC/calibration diagnostics for
+  gates, and pred-vs-actual scatter plots.
+- **In:** `01_data/4_model/v2_model_dataset.csv` (from `03_v2_data_prep`).
+  **Out:** `04_v2_decomposed_model.html` (knitted report).
+- **Methods:** R / readr / dplyr / ggplot2 / caret / pROC / gridExtra. **Wiki:**
+  [[ordc-price-adders]], [[feature-engineering]], [[price-volatility]]
+- **Key results (2026-09-15):** Gate AUCs: RTRSVPOR 0.910, RTRSVPOFF 0.963, RTRDP 0.774.
+  Part A base-energy R²=0.639 (vs v1 full-price R²≈0.52 on same split). Overall test-set
+  RMSE ≈$124 (v2) vs ≈$125 (v1) — modest improvement overall; tail (top 1%) RMSE ≈$1,212 (v2)
+  vs ≈$1,228 (v1).
+- **Last run: 2026-09-15 — PASS** (knitted via `rmarkdown::render`, 0 errors).
+
+### 06.1_spare_capacity_updated_with_outage   [analysis · developing]  (new, 2026-09-30→10-01)
+- **Purpose:** price (without adders) vs. spare-capacity metric 2 `(load − renewable_gen) / (non_re_capacity − outage_MW)`, Uri **included** (outage in denominator); local regression by year / month slices, NG- and temperature-colored scatters. Also exports `rtm_adder_aggregated_20210101_20251203.csv`.
+- **In:** hourly generation, load, `ERCOT nonRE capacity 2020-2025.csv`, `rtm_price_aggregated_2021_2025.csv`, cleaned outage parquet (see [[ercot-data-products]]). **Wiki:** [[feature-engineering]]
+- **Last run: not re-executed this sync** — cached outputs only (26 code cells, 0 error outputs); cached outputs are not evidence of PASS.
+
+### 06.2_price_adder_model   [analysis · developing]  (new, 2026-10-01)
+- **Purpose:** same metric 2 vs. the aggregated price **adders** only (adder-only EDA: year/month slices, NG and temperature coloring). Follows the 2026-09-30 note ([[sources/2026-09-30_meeting-notes]]).
+- **Last run: not re-executed this sync** — cached outputs only (22 code cells, 0 error outputs).
+
+### 01.1_model_data_v2 (`03_model`)   [model · developing]  (new, 2026-10-01)
+- **Purpose:** rebuilds the base-price model dataset with outage-aware spare capacity; exports `01_data/4_model/base_price_model_dataset_20210101_20251203.csv`, then correlation plots/heatmaps (overall + monthly). Distinct from `v2_model_dataset.csv` (made by `03_v2_data_prep`).
+- **Last run: not re-executed this sync** — cached outputs only (13 code cells, 0 error outputs).
 
 ---
 

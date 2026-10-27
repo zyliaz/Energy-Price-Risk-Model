@@ -1,7 +1,7 @@
 ---
 title: Index
 type: overview
-updated: 2026-08-07
+updated: 2026-10-16
 ---
 
 # Wiki Index
@@ -18,7 +18,10 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
 
 ## Entities
 - [[ercot]] — the ISO and its market design.
-- [[ercot-data-products]] — datasets, report IDs, extraction code map.
+- [[ercot-data-products]] — datasets, report IDs, extraction code map. NP3-233-CD: use
+  `totalResourceMW` for full-period series (zone cols NaN before 2021-05-27 17:01); archive
+  reaches back to 2014-05 (unextracted); live parquet kept for validation; one all-zero
+  source posting (2024-07-23 16:00) to drop.
 - [[puct]] — regulator; offer caps & ORDC parameters.
 - [[eia]] — natural-gas data source (Henry Hub, TX Citygate; Waha removed 2026-07-03).
 
@@ -55,16 +58,23 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
 ## Engineering (pipeline & methods, in `engineering/`)
 - [[new-source-checklist]] — compressed copy-paste todo for adding a data source.
 - [[data-extraction-guide]] — API auth, endpoints, pitfalls, timeouts, EMIL, jobs convention.
-- [[extraction-scripts]] — script architecture: 8 ERCOT API extractors (incl.
-  `ercot_mtlf_day_ahead` 2026-07-14 and `ercot_7d_load_fcast_wzn_archive` 2026-07-22, NP3-561-CD)
+- [[extraction-scripts]] — script architecture: 10 ERCOT API extractors (incl. the
+  NP3-233-CD outage-capacity pair from 2026-09-19, superseded 2026-09-24 by the
+  full-range archive extractor `ercot_outage_cap_archive_full`, 2021→present; full pull
+  landed 2026-09-24, 9.54M rows / 50,202 postings)
   vs excel→parquet parsers, plus a non-ERCOT-scraper grouping (`era5_ercot_temp.py`,
   rewritten 2026-07-29 with CPT-aligned timestamps — replaces the old UTC-only
   `era5_ercot_temp_2021-2025.py`).
 - [[analysis-workflow]] — 5-step raw→cleaned→analysis pipeline mapped to the repo + lineage.
 - [[feature-engineering]] — adder demand, CDD/HDD, capacity factor, net load, spare-capacity ratio.
-- [[notebook-catalog]] — architecture of the `00_check`/`01_eda`/`02_analysis` notebooks
-  (I/O, patterns) + template, plus `03_model/01_regression_data.ipynb` — the first notebook
-  in a new, adopted (2026-07-17) 4th grouping for modeling. Tracks 3 open gaps: no
+- [[notebook-catalog]] — architecture of the `00_check`/`01_eda`/`02_analysis`/`03_model`
+  notebooks (I/O, patterns) + template. `00_check/` now includes NP3-233-CD endpoint check
+  (`05`) and Uri forecast drift analysis (`06`). `01_eda/` gained `09_outage_eda`
+  (NP3-233-CD → 1h-ahead hourly `outage_MW`, 50,219 h, in `2_cleaned/outage/`) and
+  `09.1_outage_live_archive_comparison` (wip). `03_model/` has 4 files: `01_regression_data`
+  (data prep v1), `02_linear_regression.Rmd` (v1 model), `03_v2_data_prep` (data prep v2,
+  decomposes price into base energy + per-component adders), `04_v2_decomposed_model.Rmd`
+  (v2: 7-submodel decomposed price model — base OLS + 3×hurdle for ORDC adders). Tracks 3 open gaps: no
   WPP EDA, no RTM-vs-DAM comparison,
   no node→zone cleaning notebook (all dropped, not renamed, during the old→new repo
   migration). Every entry carries a `Last run` execution stamp. `00_emil_api_check` deleted
@@ -80,7 +90,8 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
   PASS, and now the **canonical ERCOT endpoint-check template**; feeds the new
   `ercot_7d_load_fcast_wzn_archive` extractor (Aug 2023 pulled). A PreToolUse hook now gates new
   extractors on a matching `00_check` notebook.
-  **2026-07-24 (this sync — mostly uncommitted repo drift from 2026-07-21–23):** new
+  **2026-10-16:** new `01_eda/10_renewable_gen_eda` (wip; price × renewable gen × load merge, plots only, not re-run); `05_load_rtm_price_plot` edited 2026-10-14 (not re-run).
+  **2026-07-24 (sync — mostly uncommitted repo drift from 2026-07-21–23):** new
   `00_check/02_era5_ercot_temp` (hourly ERA5 Texas temperature, native UTC timestamps,
   credentials present); `00_load_forecast_rtm_correlation_wip` renamed →
   `00_load_forecast_rtm_correlation` (promoted `wip`→`stable`); new
@@ -123,6 +134,13 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
   2025, binary heating/cooling variable, tail-behavior models (logistic/piecewise), feature
   decisions (drop perc_load, time-of-day fits well hours 16–21, degree-days still needed despite
   collinearity).
+- [[sources/2026-09-09_modeling-next-steps-yash]] — email: prioritized modeling roadmap
+  (hourly outage data, reserve margin, separate adder model, evaluation metrics, quantile
+  regression, asinh transformation).
+- [[sources/2026-09-16_np3-233-cd-outage-data]] — meeting note: NP3-233-CD (Hourly Resource
+  Outage Capacity) data source for spare_capacity_v2; resolves Uri exclusion via supply-side
+  outage tracking.
+- [[sources/2026-09-30_meeting-notes]] — meeting note: outage-vs-capacity mismatch (coal), adder modeling question, poster guidance, model to-dos.
 
 ## Analysis (filed findings — one note per notebook, named by finding)
 - [[analysis/ng-hub-correlation-breaks-uri-aug2023]] — NG benchmarks track monthly except

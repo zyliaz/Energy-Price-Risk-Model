@@ -4,7 +4,7 @@ type: engineering
 tags: [data, extraction, api, methods, reference]
 status: stable
 sources: 1
-updated: 2026-07-24
+updated: 2026-09-24
 ---
 
 # Data Extraction Guide
@@ -32,6 +32,7 @@ iterations. Read before adding a **new data source**. Full detail:
 | DAM SPP / RTM SPP (bulk) | 13060 / 13061 | archive | bulk zip download | — |
 | Price adders | NP6-793-ER | 2014+ | — | — |
 | 7-Day Load Fcast by WZ | NP3-561-CD | **archive** (live returns 0 for 2023) | archive list+POST (**≤50 docIds/batch**); keep all postings, inject `postedDatetime` | `postDatetimeFrom/To` (ISO) |
+| Resource outage cap | NP3-233-CD | **archive 2021→present** (verified 2026-09-24); live Dec 2023+ overlaps | archive only: monthly list+POST (100/batch OK), monthly part files | `postDatetimeFrom/To` (ISO) |
 
 > ⚠️ **Naming trap:** `ercot_spp_by_geo.py` = **Solar Power Production** (NP4-745-CD), *not*
 > Settlement Point Price. "SPP" is overloaded across this project. See [[lmp-spp]] for the
@@ -48,7 +49,9 @@ iterations. Read before adding a **new data source**. Full detail:
    county mapping, by overlap %. Schemas + join caveats: [[load-zones]].
 2. **Archive ≠ live.** Archive CSV timestamps are US format `MM/DD/YYYY`; columns differ in
    case (`SettlementPoint` vs `settlementPoint`); flags are `Y/N` not bool; ZIP is **nested**
-   (outer→inner→CSV). Normalize columns to match live parquet exactly.
+   (outer→inner→CSV). Normalize columns to match live parquet exactly. Build rename maps from
+   a **real downloaded doc per era**, not from the live field names: NP3-233-CD archive CSVs
+   label the date `Date`, and a map keyed on `OperatingDate` silently dropped the date column.
 3. **`hourEnding='24:00'`** = next day 00:00 — needs the DuckDB `CASE … INTERVAL 1 DAY` pattern.
 4. **Monthly chunking returns 0 rows on load/wind/solar** — those need one wide date range.
    LMP is the opposite: chunk monthly and check `totalRecords`/chunk (large ranges silently 0).
@@ -99,6 +102,29 @@ iterations. Read before adding a **new data source**. Full detail:
     queue — don't re-run a CDS notebook/script cell unattended if the target `.nc` file already
     exists on disk (the `.py` script has an existing-file skip check; the check notebook's
     "test cell" does not).
+
+16. **HPC paths ≠ local paths — never hardcode.** On HPC, `ercot_common.py` is copied flat
+    to the SLURM `--chdir` (e.g. `/work/users/z/y/zylia/`), so `PROJECT_ROOT`
+    (`Path(__file__).resolve().parents[2]`) resolves to a completely different tree than the
+    local repo's `ERCOT-Research/`. Any path passed as a CLI argument (like `--existing
+    01_data/...`) will fail because the relative prefix doesn't exist on the cluster. **Fix:**
+    always derive paths from `OUT_DIR` (which follows `PROJECT_ROOT` automatically) rather
+    than passing them as string arguments. For resume scripts, glob for the partial parquet
+    by its naming pattern inside `OUT_DIR` instead of taking a path flag.
+17. **Archive coverage can reach the present — list recent years before building a live
+    extractor.** NP3-233-CD's archive runs from 2021 to the current hour, overlaps the live API
+    and matches it exactly. We assumed it stopped at the live cutoff and spent ~27 h over 3 HPC
+    attempts paging the live API (~21 s/page) for data the archive had. One
+    `GET archive/{id}?postDatetimeFrom=<recent>` with `size=1` settles it.
+18. **One writer per long job means one point of failure.** The sep19 NP3-233-CD archive job
+    streamed 4.8M rows through a single `ParquetChunkWriter`, and the file came back unreadable
+    (`Corrupt snappy compressed data`), so every row was lost. For multi-hour jobs, write
+    **one part file per month**:
+    - Write to a tmp file, then rename, and only after every batch and the posting count check out.
+    - On rerun, skip the parts that already exist.
+    - Combine the parts at the end and check the row count from the parquet metadata.
+
+    Resume then needs no att2 script (see `ercot_outage_cap_archive_full.py`).
 
 ## Timeouts (non-member, empirical)
 Connect 10 s · read 60 s (live) / 180 s (archive list) / 240 s (archive download) · sleep

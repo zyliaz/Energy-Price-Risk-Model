@@ -4,7 +4,7 @@ type: engineering
 tags: [data, extraction, scripts, methods, reference]
 status: stable
 sources: 1
-updated: 2026-07-29
+updated: 2026-09-25
 ---
 
 # Extraction Scripts (architecture)
@@ -27,15 +27,36 @@ extractors share one core, `ercot_common.py` (`ERCOTAuth`, `ERCOTAPIClient`,
 | *`ercot_lmp_archive`* | *LMP backfill (NP6-788-CD)* | *archive 2021–2023* | *list+download* |
 | `ercot_mtlf_day_ahead` | Seven-Day Load Forecast, day-ahead slice (NP3-565-CD) | live | per-operating-day: keep the last in-use-model posting before the 10:00 CT DAM close |
 | `ercot_7d_load_fcast_wzn_archive` | Seven-Day Load Forecast **by Weather Zone** (NP3-561-CD), **every posting kept** | archive | list docIds → batch download (**≤50/POST**); inject `postedDatetime` from doc metadata; filter to delivery-date window |
+| `ercot_outage_cap` | Hourly Resource Outage Capacity (NP3-233-CD), **TotalResource zone only**, **every posting kept** — *superseded 2026-09-24* | live Dec 2023– | single-pass pagination |
+| `ercot_outage_cap_archive` | Hourly Resource Outage Capacity (NP3-233-CD) backfill — *superseded 2026-09-24; ⚠️ drops `operatingDate` for per-zone CSVs (maps `OperatingDate`, CSV has `Date`)* | archive 2021–2023 | list docIds → batch download; inject `postedDatetime` from doc metadata |
+| `ercot_outage_cap_archive_full` (job copy `04_jobs/outage_cap_archive_full_sep24/`; local copy in `1_scrapers/` since 2026-09-24) | Hourly Resource Outage Capacity (NP3-233-CD), **full range, every posting kept**, 18 cols (12 per-zone Resource/IRR/NewEquip + 3 system totals) | archive 2021→present | monthly list → batch POST (uppercase route, 100/batch) → **one part file per month** (atomic, written only if every batch + posting count checks out) → rerun skips finished months → combine + row-count verify |
 
 > The canonical set was **6 extractors** (3 live + 3 archive); a 7th, `ercot_mtlf_day_ahead`,
 > was added 2026-07-14 for the NP3-565-CD short-horizon forecast product tracked in
-> [[mid-term-load-forecast]], and an 8th, `ercot_7d_load_fcast_wzn_archive`, on 2026-07-22 for
-> the sibling **NP3-561-CD** product (see [[ercot-data-products]]). They share `ercot_common.py`
-> (auth/writer) like the others; all support `--trial-only`/`--auto`.
+> [[mid-term-load-forecast]], an 8th, `ercot_7d_load_fcast_wzn_archive`, on 2026-07-22 for
+> the sibling **NP3-561-CD** product, and a 9th+10th pair, `ercot_outage_cap` (live) +
+> `ercot_outage_cap_archive`, on 2026-09-19 for the **NP3-233-CD** Hourly Resource Outage
+> Capacity product (see [[ercot-data-products]]). They share `ercot_common.py` (auth/writer)
+> like the others; all support `--trial-only`/`--auto`.
 > `mtlf_day_ahead` has a trial pull only (`mtlf_day_ahead_trial.csv`); `7d_load_fcast_wzn_archive`
 > has been run for **Aug 2023** (`load_fcast_wzn_archive_20230801_20230831.parquet`,
 > 142,776 rows = 744 delivery-hours × ~192 postings, 0 nulls).
+> `ercot_outage_cap` (live): 7-column output (`postedDatetime`, `operatingDate`, `hourEnding`,
+> + 4 `totalResourceMWZone*` columns); ~4.65M records, ~1.3 hrs at `page_size=1000` → Method C.
+> `ercot_outage_cap_archive`: 4-column output (`postedDatetime`, `operatingDate`, `hourEnding`,
+> `totalResourceMW`); handles two archive CSV formats (2021 = system-wide `TotalResourceMW`;
+> 2022+ = per-zone, summed to `totalResourceMW`); ~25,746 docs, ~43 min → Method C. Supports
+> `--start-page` (live) for resume. Both store ALL postings (no dedup); downstream selects
+> 1h-ahead entries per advisor decision (Option A, 2026-09-19).
+> **2026-09-24:** both replaced by `ercot_outage_cap_archive_full` once the archive was found
+> to reach the present (see [[ercot-data-products]]). Local smoke tests (3 short ranges,
+> early-2021 + 2025 formats) pass; archive values match the live API with zero difference. Takes
+> `--from/--to/--batch-size/--out-dir`; no `--trial-only` (validation lives in `00_check/05`).
+> The local copy (`02_scripts/1_scrapers/`) differs from the job copy only in loading
+> credentials from the repo-root `.env` and defaulting `--out-dir` to `1.2_raw_api/outage/`.
+> Full-range output landed 2026-09-24: `outage_cap_archive_20210101_20260924.parquet`
+> (9,541,728 rows, 50,202 postings); a local 2024 run matches its 2024 slice exactly
+> (verified 2026-09-25; details in [[ercot-data-products]]).
 > `ercot_lmp_archive` is still **not copied into this repo** — NP6-788-CD nodal
 > LMP was scoped out earlier. Add it if the PA-vs-SPP nodal validation ([[lmp-spp]]) goes
 > ahead. **No solar archive exists** — the live solar endpoint already reaches 2021.

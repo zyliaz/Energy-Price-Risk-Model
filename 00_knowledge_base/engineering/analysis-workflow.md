@@ -4,7 +4,7 @@ type: engineering
 tags: [methods, workflow, pipeline, reference]
 status: stable
 sources: 1
-updated: 2026-07-24
+updated: 2026-09-26
 ---
 
 # Analysis Workflow
@@ -44,7 +44,8 @@ NP6-793-ER adder ─► rtm_price_adders_15min.parquet ─► price_adders_{hour
 NP4-742/745 W&S ──► wpp_geo.parquet ──► (capacity factor) ──────────────────┤   analyses
 EIA NG ───────────► ng_prices_monthly.parquet ─────────────────────────────┤   (3_analysis)
 GRIDMET temp ─────► Texas_..._daily_HDD_CDD.parquet ────────────────────────┤
-ERA5 temp (hourly)► Texas_hourly_temp_2021_2025.csv (2026-07-21, UTC ⚠️) ───┘
+ERA5 temp (hourly)► Texas_hourly_temp_2021_2025.csv (2026-07-21, UTC ⚠️) ───┤
+NP3-233-CD outage► outage_cap_archive_20210101_20260924.parquet ─► archive_1h_ahead_outage_20210101_2026_0924.parquet (09_outage_eda) ┘
         raw (1.2/1.3)             cleaned (2_cleaned)            analysis (3_analysis)
 ```
 Examples of step-5 merges: adder × RTM price quantile ([[ordc-price-adders]]); load × RTM

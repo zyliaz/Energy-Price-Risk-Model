@@ -1,0 +1,335 @@
+---
+title: "ERCOT V2: Decomposed Price Model"
+output: html_document
+date: "2026-09-15"
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(caret)
+library(car)
+library(pROC)
+```
+
+# Data
+
+```{r load-data}
+df <- read_csv("../../01_data/4_model/v2_model_dataset.csv",
+               col_types = cols(datetime = col_skip()))
+
+# factor encoding
+df$year         <- relevel(factor(df$year), ref = "2025")
+df$season       <- factor(df$season)
+df$time_of_day  <- factor(df$time_of_day)
+df$peak_hour    <- factor(df$peak_hour)
+df$heating_dd   <- factor(df$heating_dd)
+df$cap_threshold <- factor(df$cap_threshold)
+
+nrow(df)
+summary(df %>% select(rtm_price, base_energy, total_adder, RTRSVPOR, RTRSVPOFF, RTRDP))
+```
+
+# Train/test split
+
+Use the same 80/20 split for all sub-models so we can compare predictions on a common test set.
+
+```{r split}
+set.seed(42)
+train_idx <- createDataPartition(df$rtm_price, p = 0.8, list = FALSE)
+train <- df[train_idx, ]
+test  <- df[-train_idx, ]
+
+cat("Train:", nrow(train), "  Test:", nrow(test), "\n")
+```
+
+---
+
+# Part A: Base energy model
+
+```{r partA-filter}
+# filter out very low base_energy for log transform (same logic as v1's rtm_price > 2.3)
+train_A <- train[train$base_energy > 2.3, ]
+test_A  <- test[test$base_energy > 2.3, ]
+cat("Part A — Train:", nrow(train_A), "  Test:", nrow(test_A),
+    "  (dropped", nrow(train) - nrow(train_A), "/", nrow(test) - nrow(test_A), "low-price rows)\n")
+```
+
+```{r partA-model}
+mod_A <- lm(log10(base_energy) ~ spare_capacity + ng_price_monthly +
+              season + cap_threshold + time_of_day + heating_dd +
+              degree_days + year + peak_hour,
+            data = train_A)
+summary(mod_A)
+```
+
+```{r partA-cv}
+ctrl <- trainControl(method = "cv", number = 5, savePredictions = "final")
+
+set.seed(42)
+cv_A <- train(
+  log10(base_energy) ~ spare_capacity + ng_price_monthly +
+    season + cap_threshold + time_of_day + heating_dd +
+    degree_days + year + peak_hour,
+  data = train_A, method = "lm", trControl = ctrl
+)
+cat("CV results:\n")
+print(cv_A$results)
+
+pred_A_test <- predict(cv_A, newdata = test_A)
+cat("\nTest set (log10 scale):\n")
+print(postResample(pred_A_test, log10(test_A$base_energy)))
+```
+
+```{r partA-diagnostics, fig.width=10, fig.height=4}
+par(mfrow = c(1, 2))
+plot(mod_A, which = c(1, 2))
+```
+
+---
+
+# Parts B & C: Per-component adder models
+
+Helper function for the two-part hurdle: logistic gate + log-OLS magnitude.
+
+```{r hurdle-helpers}
+fit_hurdle <- function(train_df, test_df, component, covariates) {
+  active_col <- paste0(tolower(component), "_active")
+
+  # --- Part B: logistic gate ---
+  gate_formula <- as.formula(paste(active_col, "~", covariates))
+  gate_model <- glm(gate_formula, data = train_df, family = binomial)
+
+  gate_pred_train <- predict(gate_model, newdata = train_df, type = "response")
+  gate_pred_test  <- predict(gate_model, newdata = test_df,  type = "response")
+
+  # ROC/AUC
+  roc_obj <- roc(train_df[[active_col]], gate_pred_train, quiet = TRUE)
+
+  # --- Part C: magnitude (active subset only) ---
+  train_active <- train_df[train_df[[active_col]] == 1, ]
+  test_active  <- test_df[test_df[[active_col]] == 1, ]
+
+  mag_formula <- as.formula(paste("log10(", component, ") ~", covariates))
+  mag_model <- lm(mag_formula, data = train_active)
+
+  # Duan's smearing estimator
+  resids <- residuals(mag_model)
+  smearing_factor <- mean(10^resids)
+
+  # safe predict: handle factor levels unseen in the active subset
+  safe_predict_mag <- function(model, newdata) {
+    nd <- newdata
+    for (v in names(model$xlevels)) {
+      nd[[v]] <- factor(nd[[v]], levels = model$xlevels[[v]])
+    }
+    pred <- rep(NA_real_, nrow(nd))
+    valid <- complete.cases(nd[, names(model$xlevels), drop = FALSE])
+    if (sum(valid) > 0) {
+      pred[valid] <- predict(model, newdata = nd[valid, ])
+    }
+    # for rows with unseen levels, use the training-set mean as fallback
+    pred[!valid] <- mean(model$fitted.values)
+    pred
+  }
+
+  mag_pred_log_train <- safe_predict_mag(mag_model, train_df)
+  mag_pred_log_test  <- safe_predict_mag(mag_model, test_df)
+  mag_pred_train <- 10^mag_pred_log_train * smearing_factor
+  mag_pred_test  <- 10^mag_pred_log_test  * smearing_factor
+
+  # --- combined: P(active) * E[magnitude | active] ---
+  combined_train <- gate_pred_train * mag_pred_train
+  combined_test  <- gate_pred_test  * mag_pred_test
+
+  list(
+    component     = component,
+    gate_model    = gate_model,
+    mag_model     = mag_model,
+    roc           = roc_obj,
+    smearing      = smearing_factor,
+    gate_pred_train = gate_pred_train,
+    gate_pred_test  = gate_pred_test,
+    combined_train  = combined_train,
+    combined_test   = combined_test,
+    n_active_train  = nrow(train_active),
+    n_active_test   = nrow(test_active)
+  )
+}
+```
+
+```{r fit-hurdles}
+covar_str <- "spare_capacity + season + time_of_day + degree_days + peak_hour + year"
+
+hurdle_OR  <- fit_hurdle(train, test, "RTRSVPOR",  covar_str)
+hurdle_OFF <- fit_hurdle(train, test, "RTRSVPOFF", covar_str)
+hurdle_RD  <- fit_hurdle(train, test, "RTRDP",     covar_str)
+
+cat("=== Hurdle summaries ===\n")
+for (h in list(hurdle_OR, hurdle_OFF, hurdle_RD)) {
+  cat(sprintf("\n%s: AUC=%.3f, smearing=%.3f, active train=%d, active test=%d\n",
+              h$component, auc(h$roc), h$smearing, h$n_active_train, h$n_active_test))
+}
+```
+
+## Gate diagnostics (Part B)
+
+```{r gate-diagnostics, fig.width=12, fig.height=4}
+par(mfrow = c(1, 3))
+for (h in list(hurdle_OR, hurdle_OFF, hurdle_RD)) {
+  plot(h$roc, main = paste(h$component, "— AUC:", round(auc(h$roc), 3)))
+}
+```
+
+### Calibration: predicted probability vs observed activation by decile
+
+```{r gate-calibration, fig.width=12, fig.height=4}
+calibration_plot <- function(h, data) {
+  active_col <- paste0(tolower(h$component), "_active")
+  cal_df <- data.frame(
+    pred_prob = predict(h$gate_model, newdata = data, type = "response"),
+    actual    = data[[active_col]]
+  )
+  cal_df$decile <- ntile(cal_df$pred_prob, 10)
+  cal_df %>%
+    group_by(decile) %>%
+    summarise(mean_pred = mean(pred_prob), mean_obs = mean(actual), .groups = "drop")
+}
+
+par(mfrow = c(1, 3))
+for (h in list(hurdle_OR, hurdle_OFF, hurdle_RD)) {
+  cal <- calibration_plot(h, train)
+  plot(cal$mean_pred, cal$mean_obs,
+       xlim = c(0, 1), ylim = c(0, 1),
+       xlab = "Predicted P(active)", ylab = "Observed rate",
+       main = paste(h$component, "calibration"))
+  abline(0, 1, lty = 2, col = "gray40")
+}
+```
+
+## Magnitude model summaries (Part C)
+
+```{r mag-summaries}
+cat("=== RTRSVPOR magnitude ===\n")
+summary(hurdle_OR$mag_model)
+cat("\n=== RTRSVPOFF magnitude ===\n")
+summary(hurdle_OFF$mag_model)
+cat("\n=== RTRDP magnitude ===\n")
+summary(hurdle_RD$mag_model)
+```
+
+---
+
+# Recombination in price space
+
+$$
+\hat{P}_{\text{RTM}} = \hat{P}_{\text{base}} + \sum_{c} P(c > 0 \mid X) \cdot E[c \mid c > 0, X]
+$$
+
+```{r recombine}
+# Base energy predictions (back to levels)
+base_pred_train <- 10^predict(mod_A, newdata = train)
+base_pred_test  <- 10^predict(mod_A, newdata = test)
+
+# For rows where base_energy <= 2.3 (filtered out of Part A), use raw base_energy
+# as a floor — the model can't predict these anyway
+base_pred_train[train$base_energy <= 2.3] <- train$base_energy[train$base_energy <= 2.3]
+base_pred_test[test$base_energy <= 2.3]   <- test$base_energy[test$base_energy <= 2.3]
+
+# Total predicted price
+v2_pred_train <- base_pred_train +
+  hurdle_OR$combined_train + hurdle_OFF$combined_train + hurdle_RD$combined_train
+v2_pred_test <- base_pred_test +
+  hurdle_OR$combined_test + hurdle_OFF$combined_test + hurdle_RD$combined_test
+
+cat("=== V2 test set performance (price space, $/MWh) ===\n")
+cat(sprintf("RMSE: %.2f\n", sqrt(mean((v2_pred_test - test$rtm_price)^2))))
+cat(sprintf("MAE:  %.2f\n", mean(abs(v2_pred_test - test$rtm_price))))
+cat(sprintf("R²:   %.4f\n", cor(v2_pred_test, test$rtm_price)^2))
+```
+
+## V1 baseline comparison
+
+Refit v1 (single log-price model) on the same train/test split.
+
+```{r v1-baseline}
+train_v1 <- train[train$rtm_price > 2.3, ]
+test_v1  <- test[test$rtm_price > 2.3, ]
+
+mod_v1 <- lm(log10(rtm_price) ~ spare_capacity + ng_price_monthly +
+               season + cap_threshold + time_of_day + heating_dd +
+               degree_days + year + peak_hour,
+             data = train_v1)
+
+v1_pred_test <- 10^predict(mod_v1, newdata = test)
+v1_pred_test[test$rtm_price <= 2.3] <- test$rtm_price[test$rtm_price <= 2.3]
+
+cat("=== V1 test set performance (price space, $/MWh) ===\n")
+cat(sprintf("RMSE: %.2f\n", sqrt(mean((v1_pred_test - test$rtm_price)^2))))
+cat(sprintf("MAE:  %.2f\n", mean(abs(v1_pred_test - test$rtm_price))))
+cat(sprintf("R²:   %.4f\n", cor(v1_pred_test, test$rtm_price)^2))
+```
+
+## Stratified performance
+
+```{r stratified}
+eval_subset <- function(pred, actual, label) {
+  data.frame(
+    subset = label,
+    n      = length(pred),
+    RMSE   = sqrt(mean((pred - actual)^2)),
+    MAE    = mean(abs(pred - actual)),
+    R2     = cor(pred, actual)^2
+  )
+}
+
+adder_active_test <- test$total_adder > 0
+
+results <- bind_rows(
+  eval_subset(v2_pred_test[!adder_active_test], test$rtm_price[!adder_active_test], "V2 — adder=0"),
+  eval_subset(v2_pred_test[adder_active_test],  test$rtm_price[adder_active_test],  "V2 — adder>0"),
+  eval_subset(v1_pred_test[!adder_active_test], test$rtm_price[!adder_active_test], "V1 — adder=0"),
+  eval_subset(v1_pred_test[adder_active_test],  test$rtm_price[adder_active_test],  "V1 — adder>0")
+)
+
+# Tail performance (top 5% and top 1% of actual prices)
+p95 <- quantile(test$rtm_price, 0.95)
+p99 <- quantile(test$rtm_price, 0.99)
+
+results <- bind_rows(results,
+  eval_subset(v2_pred_test[test$rtm_price >= p95], test$rtm_price[test$rtm_price >= p95], "V2 — top 5%"),
+  eval_subset(v1_pred_test[test$rtm_price >= p95], test$rtm_price[test$rtm_price >= p95], "V1 — top 5%"),
+  eval_subset(v2_pred_test[test$rtm_price >= p99], test$rtm_price[test$rtm_price >= p99], "V2 — top 1%"),
+  eval_subset(v1_pred_test[test$rtm_price >= p99], test$rtm_price[test$rtm_price >= p99], "V1 — top 1%")
+)
+
+print(results)
+```
+
+## Predicted vs actual
+
+```{r pred-vs-actual, fig.width=12, fig.height=5}
+plot_df <- data.frame(
+  actual = test$rtm_price,
+  v1 = v1_pred_test,
+  v2 = v2_pred_test,
+  adder_active = adder_active_test
+)
+
+p1 <- ggplot(plot_df, aes(x = actual, y = v1, color = adder_active)) +
+  geom_point(size = 0.4, alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray40") +
+  coord_fixed(xlim = c(-50, 500), ylim = c(-50, 500)) +
+  scale_color_manual(values = c("FALSE" = "#1f77b4", "TRUE" = "#d62728")) +
+  labs(title = "V1: single log-price model", x = "Actual $/MWh", y = "Predicted $/MWh")
+
+p2 <- ggplot(plot_df, aes(x = actual, y = v2, color = adder_active)) +
+  geom_point(size = 0.4, alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray40") +
+  coord_fixed(xlim = c(-50, 500), ylim = c(-50, 500)) +
+  scale_color_manual(values = c("FALSE" = "#1f77b4", "TRUE" = "#d62728")) +
+  labs(title = "V2: decomposed model", x = "Actual $/MWh", y = "Predicted $/MWh")
+
+gridExtra::grid.arrange(p1, p2, ncol = 2)
+```

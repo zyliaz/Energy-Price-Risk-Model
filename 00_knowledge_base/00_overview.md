@@ -17,6 +17,9 @@ decompose volatility in real-time (RTM) and day-ahead (DAM) prices into contribu
 - **Fuel** — **[[natural-gas-prices]]** as the marginal-cost setter.
 - **Weather** — **[[weather-hdd-cdd]]** as an upstream driver of load.
 - **Scarcity mechanisms** — **[[ordc-price-adders]]**, which inject large, nonlinear price spikes under tight reserves.
+- **Resource outages** — planned and forced generation outages (**NP3-233-CD**); a direct,
+  hourly measure of supply unavailability that tightens effective spare capacity. See
+  [[ercot-data-products]].
 
 **Extended goal (2026-07-20, [[sources/2026-07-20_meeting-notes]]):** once the decomposition
 model is fit, use it for **scenario simulation** — evaluating hypothetical futures (e.g.
@@ -63,7 +66,16 @@ combined with natural-gas price and degree-days in an OLS regression, explains a
 RTM price variance (R²=0.552; spare-capacity and NG-price coefficients both significant,
 p<0.001). This is the most direct evidence so far that tightening capacity margins, not
 smooth fundamentals, drive price levels — see
-[[analysis/spare-capacity-correlates-with-rtm-price]], [[feature-engineering]]. That
+[[analysis/spare-capacity-correlates-with-rtm-price]], [[feature-engineering]].
+
+> **⭐ Metric v2 (2026-09-17) — resolves Uri exclusion:** v1 excluded Winter Storm Uri
+> because load curtailment broke the load→price pattern (load dropped while prices were at the
+> $9,000 cap). Adding hourly **resource outage capacity** (NP3-233-CD) to the denominator
+> fixes this: `spare_capacity_v2 = (load − renewable_gen) / (thermal_capacity − outage_MW)`.
+> During Uri, ~half of generation was offline, so the denominator collapses even harder than
+> load dropped — the metric spikes correctly, maintaining a consistent relationship with price
+> across all periods including extreme events. This means the full 2021–present dataset can
+> now be modeled without excluding Uri. See [[feature-engineering]]. That
 R²=0.552 figure is from a Python OLS pass that predates a 2026-07-17 edit removing all
 modeling cells from the notebook (now `01_regression_data.ipynb`, dataset-export only) —
 treat it as historical/provisional. **Update (2026-07-21–24):** modeling moved to a companion
