@@ -4,7 +4,7 @@ type: concept
 tags: [scarcity, pricing, regime-change, ercot, core]
 status: developing
 sources: 2
-updated: 2026-06-30
+updated: 2026-10-28
 ---
 
 # RTC+B / ASDC — the Dec 2025 regime change
@@ -30,9 +30,10 @@ Reliability-deployment prices per product: `RTRDPRU` (Reg-Up), `RTRDPRD` (Reg-Do
 (Non-Spin), plus `RTRDPA`. These replace the pre-2025 `RTRSVPOR` / `RTRSVPOFF` / `RTRDP`.
 
 ## Empirical findings
-- **(2026-07-03)** `RTRDPNS` (Non-Spin) is active in **100% of hours** across the full
-  post-2025 window analyzed (Dec 2025–May 2026, 0 zero-hours out of 3,911) — every other
-  reserve product has a normal zero-rate (3–84%). Confirmed (human) to be a genuine
+- **(2026-07-03; re-confirmed 2026-10-28)** `RTRDPNS` (Non-Spin) is active in **100% of
+  hours** across the full post-2025 window analyzed (2025-12-05 – 2026-10-24, 0 zero-hours out
+  of 7,775; also 0 of 3,911 on the earlier Dec 2025–May 2026 window) — every other reserve
+  product has a normal zero-rate (2–81%). Confirmed (human) to be a genuine
   characteristic of the regime, not a data artifact: consistent with Non-Spin being
   exhausted first in the reserve fill order (see "What changed" above), so it prices in
   nearly every interval. See [[notebook-catalog|03_new_pa_activation]].

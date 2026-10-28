@@ -125,6 +125,13 @@ iterations. Read before adding a **new data source**. Full detail:
     - Combine the parts at the end and check the row count from the parquet metadata.
 
     Resume then needs no att2 script (see `ercot_outage_cap_archive_full.py`).
+19. **Report 13061 SPP Excel is 15-min, not hourly, and lists load zones twice.** Each
+    hour has 4 `Delivery Interval` rows, and every `LZ_*` point appears as both `LZ` and `LZEW`
+    type (identical prices). `drop_duplicates` on date/hour/point silently keeps interval 1
+    only; average the intervals instead (`organize_rtm_lmp_2026`, fixed 2026-10-28). Also,
+    the yearly file has no posting date in its name (`RTMLZHBSPP_2026.xlsx`), so a re-download
+    collides with the old copy (macOS saved it as `RTMLZHBSPP_2026 2.xlsx`) — name the file
+    explicitly rather than globbing.
 
 ## Timeouts (non-member, empirical)
 Connect 10 s · read 60 s (live) / 180 s (archive list) / 240 s (archive download) · sleep

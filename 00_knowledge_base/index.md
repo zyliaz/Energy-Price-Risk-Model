@@ -90,6 +90,9 @@ Two knowledge tracks: **Market knowledge** (`concepts/`) — how the ERCOT marke
   PASS, and now the **canonical ERCOT endpoint-check template**; feeds the new
   `ercot_7d_load_fcast_wzn_archive` extractor (Aug 2023 pulled). A PreToolUse hook now gates new
   extractors on a matching `00_check` notebook.
+  **2026-10-28:** `03_model/01.1_model_data_v2` now actually subtracts outage MW in
+  `spare_capacity` (path was dead) — re-run PASS, 1,210 hours > 1; `00_check/02_era5_ercot_temp`
+  gained 2026 extension cells (not run).
   **2026-10-16:** new `01_eda/10_renewable_gen_eda` (wip; price × renewable gen × load merge, plots only, not re-run); `05_load_rtm_price_plot` edited 2026-10-14 (not re-run).
   **2026-07-24 (sync — mostly uncommitted repo drift from 2026-07-21–23):** new
   `00_check/02_era5_ercot_temp` (hourly ERA5 Texas temperature, native UTC timestamps,

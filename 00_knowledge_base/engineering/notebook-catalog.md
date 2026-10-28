@@ -123,6 +123,12 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   script) and re-running its validation checks fresh: 43,824 rows, full hourly coverage
   2021-01-01–2025-12-31, 0 nulls/dupes, temp range 7–104°F — **PASS 2026-07-24** (data
   re-verified; retrieval cells not re-run).
+- **2026 extension added 2026-10-28 (cells 4–10, not yet run):** pulls 2026-01-01 → last full
+  CPT day ERA5 serves (~5-day lag), one UTC month per request; same mask + CPT hour-ending
+  conversion as 2021–2025. Records which months are still preliminary ERA5T (`expver` 0005),
+  checks the splice against the 2025 file, and exports
+  `2_cleaned/weather/Texas_hourly_temp_20260101_<end>.csv` (2021–2025 file untouched). Ends with
+  a human decision checklist (window end, ERA5T handling, splice, separate vs merged file).
 - ⚠️ Output `datetime` is **UTC**, not this repo's HE-Central convention — confirmed via
   diurnal profile (peak at raw hour 21, trough at hour 11–12, a ~6h shift from expected
   local peak/trough). Not fixed — see [[weather-hdd-cdd]], [[feature-engineering]].
@@ -236,15 +242,15 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 
 ### 06_new_pa_cleaning   [eda · stable]
 - **Purpose:** Validate & aggregate post-2025 (RTC+B) ancillary adders (`RTRDPA/RU/RD/RRS/ECRS/NS`).
-- **In:** `rtm_price_adders_15min_20251205_20260517.parquet` (1.2). **Out:** `post_202512_price_adders_hourly.csv` + `_binary.csv`.
+- **In:** `rtm_price_adders_15min_20251205_20261024.parquet` (1.2). **Out:** `post_202512_price_adders_hourly_20251205_20261024.csv` + `post_202512_price_adders_hourly_binary_20251205_20261024.csv` (7,775 h, 2025-12-05 HE1 – 2026-10-24 HE24).
 - **Methods:** duckdb. **Wiki:** [[rtc-b-asdc]]
-- **Last run: 2026-07-03 — PASS.**
+- **Last run: 2026-10-28 — PASS** (repointed to the Oct 2026 data; the May outputs, undated names, remain on disk).
 
 ### 07_new_pa_distribution   [eda · stable]
 - **Purpose:** Post-2025 adder value distribution.
-- **In:** `post_202512_price_adders_hourly.csv`, `rtm_price_mean_...csv`. **Out:** figures.
+- **In:** `post_202512_price_adders_hourly_20251205_20261024.csv`, `rtm_price_mean_20251205_20261024.csv`. **Out:** `price_adders_pdf_20261024.png`.
 - **Methods:** seaborn, OLS. **Wiki:** [[rtc-b-asdc]]
-- **Last run: 2026-07-03 — PASS.**
+- **Last run: 2026-10-28 — PASS.**
 
 ### 08_hdd_eda   [eda · stable]
 - **Purpose:** Texas HDD/CDD vs load (and price) over the year.
@@ -371,8 +377,10 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 
 ### 03_new_pa_activation   [analysis · stable]
 - **Purpose:** Post-2025 ancillary-adder activation by price quantile.
-- **In:** `post_202512_price_adders_hourly_binary.csv`, `rtm_lzhb_spp_20251205_20260516.parquet` (1.2).
-- **Out:** `rtm_price_mean_...csv`, activation csv. **Methods:** quantile bins. **Wiki:** [[rtc-b-asdc]]
+- **In:** `post_202512_price_adders_hourly_binary_20251205_20261024.csv`, `rtm_lzhb_spp_20251205_20261024.parquet` (1.2).
+- **Out:** `rtm_price_mean_20251205_20261024.csv` (mean over the 15 LZ/HB points),
+  `price_adders_activation_analysis_20251205_20261024.csv`, `price_adder_percentiles_last_10_1.0_20261024.png`.
+  **Methods:** quantile bins. **Wiki:** [[rtc-b-asdc]]
 - Audited 2026-07-03 for the same activation-rate scaling bug found in `02_price_adder_activation`
   (mean-of-dollar-value × 100 instead of mean-of-binary-flag). **Not present here** — this
   notebook's source file is genuinely binarized upstream in `06_new_pa_cleaning` (`(col > 0)
@@ -382,28 +390,33 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   sandwiched between 101–108), which under the status-label rule above means the earlier "PASS"
   hadn't actually been earned by a fresh top-to-bottom run — re-executed now, exec counts 1–11,
   0 errors, output values confirmed bounded [0,1] pre-scaling.
-- ✅ **Finding, confirmed (human) 2026-07-03:** `RTRDPNS` is active in **100% of hours** (0
-  zero-hours out of 3,911, the entire Dec-2025–May-2026 window) — every other adder has a real
-  zero-rate (`RTRDPA` 84%, `RTRDPRU` 8%, `RTRDPRD` 3%, `RTRDPRRS` 4%, `RTRDPECRS` 4%). This is
-  a genuine RTC+B system characteristic (Non-Spin is exhausted first in the reserve fill order,
-  so it prices in nearly every interval), not a parsing artifact. Recorded in [[rtc-b-asdc]].
-- **Last run: 2026-07-03 — PASS** (re-executed `--inplace`).
+- ✅ **Finding, confirmed (human) 2026-07-03, re-confirmed on the Oct 2026 data 2026-10-28:**
+  `RTRDPNS` is active in **100% of hours** (0 zero-hours out of 7,775, 2025-12-05 – 2026-10-24)
+  — every other adder has a real zero-rate (`RTRDPA` 81%, `RTRDPRU` 4%, `RTRDPRD` 2%,
+  `RTRDPRRS` 2%, `RTRDPECRS` 2%). This is a genuine RTC+B system characteristic (Non-Spin is
+  exhausted first in the reserve fill order, so it prices in nearly every interval), not a
+  parsing artifact. Recorded in [[rtc-b-asdc]].
+- **Last run: 2026-10-28 — PASS** (`nbconvert --execute --inplace`, on the Oct 2026 data and
+  the interval-averaged SPP — see [[extraction-scripts]] `organize_rtm_lmp_2026`).
 
 ### 04_price_adder_rtm_load_correlation   [analysis · stable]
 - **Purpose:** Adder ↔ RTM ↔ load correlations, **both regimes** (largest notebook, 27 cells).
   Pre/post-Dec-2025 datasets are read, cleaned, and merged **separately** (different adder
   schema — see [[ordc-price-adders]]) and never concatenated; only plotted side-by-side.
 - **In:** `2_cleaned/rtm_price/rtm_price_aggregated_2021_2025.csv` (pre; rename `avg_rtm_price`→`rtm_price`),
-  `price_adders_numerical_analysis.csv` (pre), `post_202512_price_adders_hourly.csv` (post),
-  `2_cleaned/load/load_by_LZ_20201231_20260526.parquet`. **Out:** `pre2025_merged_data.csv`,
-  `adder_abnormal_pre2025_no_uri.csv`.
+  `price_adders_numerical_analysis.csv` (pre), `post_202512_price_adders_hourly_20251205_20261024.csv`
+  + `rtm_price_mean_20251205_20261024.csv` (post), `2_cleaned/load/load_by_LZ_20201231_20260526.parquet`
+  (load still ends 2026-05-26, short of the Oct 2026 post-2025 price/adder data). **Out:**
+  `pre2025_merged_data.csv`, `adder_abnormal_pre2025_no_uri.csv`, pre-2025 PNGs; post-2025-bearing
+  PNGs carry a `_20261024` suffix (`price_adder_correlations_rtm_20261024.png`,
+  `price_adder_correlation_rtm_log_20261024.png`, `price_adder_rtm_load_correlation_post2025_20261024.png`).
 - **Methods:** merge, corr, scatter. **Wiki:** [[ordc-price-adders]], [[load-and-demand]]
 - Fixed 2026-07-03: `pre_2025_rtm_price.csv` was never produced by any script/notebook (stale
   reference, not "not-yet-run upstream" as previously noted below); repointed to the actual
   cleaned RTM price file and fixed a no-op column rename (`price`→`rtm_price` when the real
   column was `avg_rtm_price`). Load path already matched the on-disk file
   (`load_by_LZ_20201231_20260526.parquet`) — the "gap" noted below was stale.
-- **Last run: 2026-07-03 — PASS** (after fix; re-executed `--inplace`).
+- **Last run: 2026-10-28 — PASS** (`nbconvert --execute --inplace`, Oct 2026 post-2025 data).
 
 ### 05_load_rtm_price_plot   [analysis · stable]
 - **Purpose:** RTM price vs load, faceted by year.
@@ -449,13 +462,14 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   price (SPP), pre- and post-2025. Merges HE-hourly adders with the corrected real-RTM SPP on the
   raw HE timestamp (no shift).
 - **In:** `3_analysis/price_adders_analysis/price_adders_numerical_analysis.csv`,
-  `3_analysis/price_adders_analysis/post_202512/post_202512_price_adders_hourly.csv`,
+  `3_analysis/price_adders_analysis/post_202512/post_202512_price_adders_hourly_20251205_20261024.csv`,
   `2_cleaned/rtm_price/rtm_price_aggregated_2021_2025.csv`,
-  `3_analysis/price_adders_analysis/post_202512/rtm_price_mean_20251205_20260516.csv`.
-  **Out:** `3_analysis/price_adders_analysis/pa_vs_spp/` (`pa_gt_spp_exceptions.csv` + 2 PNGs).
+  `3_analysis/price_adders_analysis/post_202512/rtm_price_mean_20251205_20261024.csv`.
+  **Out:** `3_analysis/price_adders_analysis/pa_vs_spp/` (`pa_gt_spp_exceptions_20261024.csv`,
+  `pa_vs_spp_exceptions_pre2025.png`, `pa_vs_spp_exceptions_post2025_20261024.png`).
   **Methods:** pandas merge, 1:1-line scatter. **Wiki:** [[ordc-price-adders]], [[lmp-spp]],
   [[analysis/pa-stays-below-spp-except-negative-price-hours]].
-- **Last run: 2026-07-23 — PASS** (`nbconvert --execute`, 0 errors).
+- **Last run: 2026-10-28 — PASS** (`nbconvert --execute`, 0 errors, Oct 2026 post-2025 data).
 - Finding filed: [[analysis/pa-stays-below-spp-except-negative-price-hours]].
 
 ## 03_model — modeling on top of 02_analysis outputs
@@ -557,7 +571,8 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 
 ### 01.1_model_data_v2 (`03_model`)   [model · developing]  (new, 2026-10-01)
 - **Purpose:** rebuilds the base-price model dataset with outage-aware spare capacity; exports `01_data/4_model/base_price_model_dataset_20210101_20251203.csv`, then correlation plots/heatmaps (overall + monthly). Distinct from `v2_model_dataset.csv` (made by `03_v2_data_prep`).
-- **Last run: not re-executed this sync** — cached outputs only (13 code cells, 0 error outputs).
+- **Fixed 2026-10-28:** `OUTAGE_PATH` (`2_cleaned/outage/archive_1h_ahead_outage_20210101_2026_0924.parquet`) was defined but never loaded, so `spare_capacity` had no outage term. Now inner-joins `totalResourceMW` on datetime (as `06.1`): `(total_load − renewable_gen) / (non_re_capacity − outage)`. Effect: 43,147 rows unchanged; mean `spare_capacity` 0.507 → 0.644; corr with `price_wo_adders` 0.177 → 0.227; 1,210 hours > 1 (see [[feature-engineering]] "Outage denominator mismatch").
+- **Last run: 2026-10-28 — PASS** (`nbconvert --execute --inplace`, 0 errors).
 
 ---
 

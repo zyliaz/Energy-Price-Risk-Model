@@ -145,7 +145,7 @@ Per [[sources/2026-08-03_research-meeting]], experimental tweaks proposed for fu
     collinearity note below). See [[weather-hdd-cdd]].
 
 ## Outage denominator mismatch (2026-09-30)
-Per [[sources/2026-09-30_meeting-notes]]: the NP3-233-CD outage series covers all thermal capacity including coal, but the annual `non_re_capacity` table does not, so `thermal_capacity − outage_MW` can understate effective capacity. To check: that retired plants do not appear as outage (baseline level + retirements). The outage input is the 1h-ahead archive series only. Notebooks `02_analysis/06.1`, `06.2` and `03_model/01.1_model_data_v2` implement the outage-aware metric (see [[notebook-catalog]]).
+Per [[sources/2026-09-30_meeting-notes]]: the NP3-233-CD outage series covers all thermal capacity including coal, but the annual `non_re_capacity` table does not, so `thermal_capacity − outage_MW` can understate effective capacity. To check: that retired plants do not appear as outage (baseline level + retirements). The outage input is the 1h-ahead archive series only. Notebooks `02_analysis/06.1`, `06.2` and `03_model/01.1_model_data_v2` implement the outage-aware metric `(total_load − renewable_gen) / (non_re_capacity − totalResourceMW)` (see [[notebook-catalog]]); 01.1 only since 2026-10-28 — before that it defined the outage path but never loaded it. The mismatch shows in the data: 1,210 of 43,147 hours (2021-01-01 – 2025-12-03) have `spare_capacity` > 1 (max 1.25).
 
 ## Related
 - [[load-and-demand]] · [[weather-hdd-cdd]] · [[wind-power-production]] · [[price-volatility]]

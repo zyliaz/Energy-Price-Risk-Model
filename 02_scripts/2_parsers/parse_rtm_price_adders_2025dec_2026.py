@@ -4,9 +4,9 @@ Parse ERCOT RTM Price Adder HIST Excel files (2025 + 2026) into a single
 
 Sources (HIST schema only — 6 price columns):
   - rpt…20260101…HIST_RT15MPRICEADDER_2025.xlsx  (2025 data)
-  - rpt…20260517…HIST_RT15MPRICEADDER_2026.xlsx  (2026 data through ~May)
+  - rpt…20261025…HIST_RT15MPRICEADDER_2026.xlsx  (2026 data through 2026-10-24)
 
-Output: 01_data/1.2_raw_api/rtm_price_adders_15min_20250105_20260517.parquet
+Output: 01_data/1.2_raw_api/rtm_price_adders_15min_20251205_20261024.parquet
 """
 
 import os
@@ -19,7 +19,7 @@ import pyarrow.parquet as pq
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR  = str(PROJECT_ROOT / "01_data/1.1_raw_bulk/RTM Price Adders 2021-2025")
-OUT_PATH = str(PROJECT_ROOT / "01_data/1.2_raw_api/rtm_price_adders_15min_20250105_20260517.parquet")
+OUT_PATH = str(PROJECT_ROOT / "01_data/1.2_raw_api/rtm_price_adders_15min_20251205_20261024.parquet")
 
 HIST_PRICE_COLS = ["RTRDPA", "RTRDPRU", "RTRDPRD", "RTRDPRRS", "RTRDPECRS", "RTRDPNS"]
 
@@ -50,10 +50,10 @@ def parse_hist_files() -> pd.DataFrame:
     # Exclude Excel lock files (~$...)
     file_2025 = [f for f in glob.glob(os.path.join(RAW_DIR, "*20260101*HIST_RT15MPRICEADDER*.xlsx"))
                  if not os.path.basename(f).startswith("~$")]
-    file_2026 = [f for f in glob.glob(os.path.join(RAW_DIR, "*20260517*HIST_RT15MPRICEADDER*.xlsx"))
+    file_2026 = [f for f in glob.glob(os.path.join(RAW_DIR, "*20261025*HIST_RT15MPRICEADDER*.xlsx"))
                  if not os.path.basename(f).startswith("~$")]
     assert len(file_2025) == 1, f"Expected 1 file matching *20260101*HIST*, found {len(file_2025)}"
-    assert len(file_2026) == 1, f"Expected 1 file matching *20260517*HIST*, found {len(file_2026)}"
+    assert len(file_2026) == 1, f"Expected 1 file matching *20261025*HIST*, found {len(file_2026)}"
 
     chunks = []
     for path in [file_2025[0], file_2026[0]]:

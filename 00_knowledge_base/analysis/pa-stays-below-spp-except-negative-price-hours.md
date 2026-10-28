@@ -5,7 +5,7 @@ tags: [pricing, scarcity, ordc, lmp-spp, ercot]
 status: developing
 notebook: 03_notebooks/02_analysis/07_pa_vs_spp.ipynb
 date: 2026-07-23
-updated: 2026-07-23
+updated: 2026-10-28
 ---
 
 # Price adder stays below RTM SPP except in negative-price hours
@@ -31,8 +31,10 @@ the summed RTC-B deployment adders. RTM SPP is the real 15-min RTM series aggreg
 - Using `adder_sum` (which adds the offline `RTRSVPOFF`) produces 64 exceptions, including
   high-price hours — expected, because `RTRSVPOFF` is not part of the online SPP. `adder_effective`
   is the correct measure for the "embedded adder ≤ price" test.
-- **Post-2025 (RTC-B regime) is different: PA ≤ SPP holds only ~93.5%** (3,656/3,911), 255
-  exceptions (66% at SPP < 0, but some at high SPP). The post-2025 `adder_sum` is a sum of
+- **Post-2025 (RTC-B regime) is different: PA ≤ SPP holds only ~96.2%** (7,482/7,775,
+  2025-12-05 – 2026-10-24; 2026-10-28 rerun), 293 exceptions (58% at SPP < 0, but some at high
+  SPP, up to $1,112 on 2026-01-28 HE8). The May-window figure (93.5%, 255 exceptions) used an
+  SPP that kept only the first 15-min interval per hour; the rerun uses the hourly interval mean. The post-2025 `adder_sum` is a sum of
   ancillary-service-specific deployment adders (RTRDPRU/RD/RRS/ECRS/NS), not a single embedded
   energy adder, so its sum is not bounded by the energy SPP — exceptions here are not anomalous.
 - **The earlier apparent PA>SPP problem was inflated by two now-fixed bugs:** comparing against
@@ -41,8 +43,8 @@ the summed RTC-B deployment adders. RTM SPP is the real 15-min RTM series aggreg
   negative-price hours.
 
 **Citations:** `03_notebooks/02_analysis/07_pa_vs_spp.ipynb`,
-`01_data/3_analysis/price_adders_analysis/pa_vs_spp/pa_gt_spp_exceptions.csv` (294 exception hours,
-pre+post), [[ordc-price-adders]], [[lmp-spp]], [[rtc-b-asdc]], [[feature-engineering]].
+`01_data/3_analysis/price_adders_analysis/pa_vs_spp/pa_gt_spp_exceptions_20261024.csv` (332 exception
+hours, pre+post), [[ordc-price-adders]], [[lmp-spp]], [[rtc-b-asdc]], [[feature-engineering]].
 
 ## Related
 - [[ordc-price-adders]] · [[lmp-spp]] · [[rtm-dam]] · [[rtc-b-asdc]] · [[price-volatility]]

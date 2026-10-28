@@ -1,20 +1,21 @@
 """
 ERCOT RTM LMP Dec 2025 + 2026 — Excel → Parquet
 =================================================
-Produces a continuation parquet covering Dec 5 2025 through May 16 2026,
+Produces a continuation parquet covering Dec 5 2025 through Oct 24 2026,
 mirroring the date range of the RTM price adder continuation file.
 
 Sources:
     01_data/1.1_raw_bulk/RTM_2021_2026Mar/
-        rpt.00013061.….RTMLZHBSPP_2025.xlsx  ← Dec sheet only
-        rpt.00013061.….RTMLZHBSPP_2026.xlsx  ← Jan–May sheets
+        rpt.00013061.….RTMLZHBSPP_2025.xlsx    ← Dec sheet only
+        rpt.00013061.….RTMLZHBSPP_2026 2.xlsx  ← all 2026 sheets (posted 2026-10-25;
+                                                 the older May posting is RTMLZHBSPP_2026.xlsx)
 
 Columns kept (user-selected):
     delivery_date, delivery_hour, repeated_hour_flag,
     settlement_point, price
 
 Output:
-    01_data/1.2_raw_api/rtm_lzhb_spp_20251205_20260516.parquet
+    01_data/1.2_raw_api/rtm_lzhb_spp_20251205_20261024.parquet
 
 Reuses helpers from organize_lmp_parquet.py — do not duplicate logic there.
 """
@@ -43,7 +44,10 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-OUT_PATH = RAW_API / "rtm_lzhb_spp_20251205_20260516.parquet"
+OUT_PATH = RAW_API / "rtm_lzhb_spp_20251205_20261024.parquet"
+FILE_2026 = "rpt.00013061.0000000000000000.RTMLZHBSPP_2026 2.xlsx"  # 2026-10-25 posting
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 START_DATE = pd.Timestamp("2025-12-05").date()
 
 KEEP_COLS = ["Delivery Date", "Delivery Hour", "Repeated Hour Flag",
@@ -93,13 +97,19 @@ def process() -> None:
     raw_2025 = raw_2025[pd.to_datetime(raw_2025["Delivery Date"], format="%m/%d/%Y").dt.date >= START_DATE]
     log.info("2025 Dec raw rows (from %s): %d", START_DATE, len(raw_2025))
 
-    # Jan–May 2026 from the 2026 file
-    path_2026 = _pick("*RTMLZHBSPP_2026.xlsx")
-    raw_2026 = _read_sheets(path_2026, ["Jan", "Feb", "Mar", "Apr", "May"])
+    # All available 2026 months from the latest 2026 posting
+    path_2026 = RTM_DIR / FILE_2026
+    assert path_2026.exists(), f"Missing {path_2026}"
+    raw_2026 = _read_sheets(path_2026, MONTHS)
     log.info("2026 raw rows: %d", len(raw_2026))
 
     raw = pd.concat([raw_2025, raw_2026], ignore_index=True)
     df = _normalise(raw)
+
+    # Hourly price = mean of the 4 15-min interval prices (LZ and LZEW rows share a
+    # name and carry identical prices, so they collapse into the same mean).
+    keys = ["timestamp", "delivery_date", "delivery_hour", "repeated_hour_flag", "settlement_point"]
+    df = df.groupby(keys, as_index=False)["price"].mean()
 
     before = len(df)
     df = df.drop_duplicates(
