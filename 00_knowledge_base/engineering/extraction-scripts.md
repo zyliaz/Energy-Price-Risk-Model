@@ -4,7 +4,7 @@ type: engineering
 tags: [data, extraction, scripts, methods, reference]
 status: stable
 sources: 1
-updated: 2026-09-25
+updated: 2026-10-28
 ---
 
 # Extraction Scripts (architecture)
@@ -19,7 +19,7 @@ extractors share one core, `ercot_common.py` (`ERCOTAuth`, `ERCOTAPIClient`,
 
 | Script | Data | Vintage | Strategy |
 |---|---|---|---|
-| `ercot_load_by_fzn` | Load by forecast zone | live 2021+ | single-pass pagination |
+| `ercot_load_by_fzn` | Load by forecast zone | live 2021+ | single-pass pagination. Does **not** load `.env` itself (unlike `ercot_outage_cap_archive_full`); run with the env vars set. Last pull 2026-10-28: `--from 2026-05-27 --to 2026-10-24` → `1.2_raw_api/load_fzn_20260527_20261024.parquet` (3,624 rows; no `timestamp` column, unlike the older file) |
 | `ercot_wpp_by_geo` | Wind by geo | live 2021+ | single-pass pagination |
 | `ercot_spp_by_geo` | **Solar** by geo (NP4-745-CD) | live 2021+ | single-pass pagination |
 | `ercot_load_archive` | Load (backfill / cross-check) | archive 2021–2023 | list docIds → batch download |
@@ -29,7 +29,7 @@ extractors share one core, `ercot_common.py` (`ERCOTAuth`, `ERCOTAPIClient`,
 | `ercot_7d_load_fcast_wzn_archive` | Seven-Day Load Forecast **by Weather Zone** (NP3-561-CD), **every posting kept** | archive | list docIds → batch download (**≤50/POST**); inject `postedDatetime` from doc metadata; filter to delivery-date window |
 | `ercot_outage_cap` | Hourly Resource Outage Capacity (NP3-233-CD), **TotalResource zone only**, **every posting kept** — *superseded 2026-09-24* | live Dec 2023– | single-pass pagination |
 | `ercot_outage_cap_archive` | Hourly Resource Outage Capacity (NP3-233-CD) backfill — *superseded 2026-09-24; ⚠️ drops `operatingDate` for per-zone CSVs (maps `OperatingDate`, CSV has `Date`)* | archive 2021–2023 | list docIds → batch download; inject `postedDatetime` from doc metadata |
-| `ercot_outage_cap_archive_full` (job copy `04_jobs/outage_cap_archive_full_sep24/`; local copy in `1_scrapers/` since 2026-09-24) | Hourly Resource Outage Capacity (NP3-233-CD), **full range, every posting kept**, 18 cols (12 per-zone Resource/IRR/NewEquip + 3 system totals) | archive 2021→present | monthly list → batch POST (uppercase route, 100/batch) → **one part file per month** (atomic, written only if every batch + posting count checks out) → rerun skips finished months → combine + row-count verify |
+| `ercot_outage_cap_archive_full` (job copy `04_jobs/outage_cap_archive_full_sep24/`; local copy in `1_scrapers/` since 2026-09-24) | Hourly Resource Outage Capacity (NP3-233-CD), **full range, every posting kept**, 18 cols (12 per-zone Resource/IRR/NewEquip + 3 system totals) | archive 2021→present | monthly list → batch POST (uppercase route, 100/batch) → **one part file per month** (atomic, written only if every batch + posting count checks out) → rerun skips finished months → combine + row-count verify. Last pull 2026-10-28: `--from 2026-09-01 --to 2026-10-28` → `1.2_raw_api/outage/outage_cap_archive_20260901_20261028.parquet` (264,384 rows; Sep 720 docs, Oct 657) |
 
 > The canonical set was **6 extractors** (3 live + 3 archive); a 7th, `ercot_mtlf_day_ahead`,
 > was added 2026-07-14 for the NP3-565-CD short-horizon forecast product tracked in

@@ -4,7 +4,7 @@ type: engineering
 tags: [methods, notebooks, reference]
 status: developing
 sources: 1
-updated: 2026-10-16
+updated: 2026-10-28
 ---
 
 # Notebook Catalog (architecture)
@@ -123,15 +123,27 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   script) and re-running its validation checks fresh: 43,824 rows, full hourly coverage
   2021-01-01–2025-12-31, 0 nulls/dupes, temp range 7–104°F — **PASS 2026-07-24** (data
   re-verified; retrieval cells not re-run).
-- **2026 extension added 2026-10-28 (cells 4–10, not yet run):** pulls 2026-01-01 → last full
+- **2026 extension (cells 4–11, added + run 2026-10-28):** pulls 2026-01-01 → last full
   CPT day ERA5 serves (~5-day lag), one UTC month per request; same mask + CPT hour-ending
   conversion as 2021–2025. Records which months are still preliminary ERA5T (`expver` 0005),
   checks the splice against the 2025 file, and exports
-  `2_cleaned/weather/Texas_hourly_temp_20260101_<end>.csv` (2021–2025 file untouched). Ends with
-  a human decision checklist (window end, ERA5T handling, splice, separate vs merged file).
-- ⚠️ Output `datetime` is **UTC**, not this repo's HE-Central convention — confirmed via
-  diurnal profile (peak at raw hour 21, trough at hour 11–12, a ~6h shift from expected
-  local peak/trough). Not fixed — see [[weather-hdd-cdd]], [[feature-engineering]].
+  `2_cleaned/weather/Texas_hourly_temp_20260101_20261021.csv` (7,055 h; 2021–2025 file
+  untouched). Cell 11 exports the RTC+B window
+  `2_cleaned/weather/Texas_hourly_temp_20251205_20261021.csv` (7,703 h, 2025-12-05 HE1 –
+  2026-10-21 HE24; asserts no gaps/dupes/NaNs, expected hours built in CPT so the
+  spring-forward hour is not expected). Ends with a human decision checklist (window end,
+  ERA5T handling, splice, separate vs merged file).
+- **Result (2026-10-28):** 2026 Jan–Aug final ERA5 (`0001`), Sep–Oct preliminary ERA5T
+  (`0005`); same lat/lon grid as 2025; 0 missing/dupes/NaN, 14.9–102.8 °F; Dec 31 hours
+  re-pulled in the Jan-2026 request match the 2025 pull to 1.3e-6 °F; step at the join −0.80 °F
+  (99th-pct hourly |Δ| 6.91 °F).
+- **Fixed 2026-10-28:** the kernel died at the splice check (cell 15) because cell 13 left the
+  2026 `.nc` files open and cell 15 re-opened the Jan file; cell 13 now opens them with `with`.
+- ✅ **Superseded:** this entry earlier flagged the output `datetime` as UTC. Since the
+  2026-07-29 rewrite the output is CPT hour-ending — verified 2026-10-28 by diurnal profile
+  (mean peak at hour 16–17, trough at hour 8) on both the 2021–2025 and RTC+B-window files.
+- **Last run: 2026-10-28 — PASS** (cell-by-cell via nbclient, all cells; downloads skipped
+  where `.nc` already on disk; Aug, Sep, Oct-to-22 2026 newly downloaded).
 
 ### 04_ercot_7d_load_fcast_by_wzn_endpoint_check   [check · template · stable]
 - **Purpose:** Endpoint check for **NP3-561-CD** (Seven-Day Load Forecast by Weather Zone) and,
@@ -188,9 +200,16 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 
 ### 01_load_eda   [eda · stable]
 - **Purpose:** Actual-load EDA; North-zone time series.
-- **In:** `load_fzn_...parquet` (1.2). **Out:** `load_by_LZ_...parquet`, `total_load_...csv` (2_cleaned/load).
+- **In:** `load_fzn_20201231_20260526.parquet` + `load_fzn_20260527_20261024.parquet` (1.2),
+  read as one duckdb view (`union_by_name`). The 2026-10-28 pull has no `timestamp` column;
+  the view fills it as `operatingDay + hourEnding` (HE, `24:00` → next day `00:00`), the same
+  rule as the older file. **Out:** `load_by_LZ_20201231_20261024.parquet`,
+  `total_load_20201231_20261024.csv` (2_cleaned/load; 50,943 h, 2020-12-31 HE1 – 2026-10-24
+  HE24, 0 dupes/nulls). The May-cut outputs (`…_20260526`) remain on disk.
+- **Result (2026-10-28):** reproduces all 47,319 rows of the old `total_load_20201231_20260526.csv`
+  exactly. Gaps other than DST hours: 2025-12-04 HE1–HE24 is absent from the raw pull.
 - **Methods:** duckdb, rolling. **Wiki:** [[load-and-demand]]
-- **Last run: 2026-07-03 — PASS.**
+- **Last run: 2026-10-28 — PASS** (`nbconvert --execute --inplace`).
 
 ### 02_mtlf_eda   [eda · stable]
 - **Purpose:** Mid-term load forecast across 8 weather zones + system total (actual/forecast/error).
@@ -274,14 +293,20 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
   2021-05-27 17:01), builds the HE `datetime`, selects the latest posting before each hour
   ends, trims the forecast tail after the last posting, then does summary stats and an
   hourly line chart.
-- **In:** `1.2_raw_api/outage/outage_cap_archive_20210101_20260924.parquet`.
-  **Out:** `01_data/2_cleaned/outage/archive_1h_ahead_outage_20210101_2026_0924.parquet`
-  (50,219 rows; `datetime`, `totalResourceMW`).
+- **In:** `1.2_raw_api/outage/outage_cap_archive_20210101_20260924.parquet` +
+  `outage_cap_archive_20260901_20261028.parquet` (added 2026-10-28). The two pulls overlap on
+  2026-09-01 – 09-24; duplicate postings (`postedDatetime, operatingDate, hourEnding`) are
+  dropped (9,806,112 → 9,698,208 rows).
+  **Out:** `01_data/2_cleaned/outage/archive_1h_ahead_outage_20210101_2026_1028.parquet`
+  (51,036 rows, to 2026-10-28 HE12; `datetime`, `totalResourceMW`). The file name now carries the
+  series' last date. The Sep-cut output (`…_2026_0924`, 50,219 rows) remains on disk.
+- **2026-10-28 extension:** identical to the Sep-cut series on all 50,219 overlapping hours except
+  2026-09-07 HE8. New segment 817/817 hours, no gaps.
 - **Result:** no gaps or duplicates; lead time median 58.2 min. Validated 2026-09-26 against an
   independent rebuild: identical except 2024-07-23 HE 17 = 0 MW, which comes from the one
   all-zero ERCOT posting (not yet filtered in the notebook). Selection rule + numbers:
   [[feature-engineering]]; source quirks: [[ercot-data-products]].
-- **Last run:** 2026-09-26 (outputs present). **Wiki:** [[ercot-data-products]] · [[feature-engineering]]
+- **Last run: 2026-10-28 — PASS** (`nbconvert --execute --inplace`). **Wiki:** [[ercot-data-products]] · [[feature-engineering]]
 
 ### 09.1_outage_live_archive_comparison   [eda · wip]  (the former `09_outage_eda copy`)
 - **Purpose (per header):** same cleaning spec, intended for the live-vs-archive comparison.
@@ -573,6 +598,29 @@ or a variable referenced before assignment only surfaces at runtime. Rules:
 - **Purpose:** rebuilds the base-price model dataset with outage-aware spare capacity; exports `01_data/4_model/base_price_model_dataset_20210101_20251203.csv`, then correlation plots/heatmaps (overall + monthly). Distinct from `v2_model_dataset.csv` (made by `03_v2_data_prep`).
 - **Fixed 2026-10-28:** `OUTAGE_PATH` (`2_cleaned/outage/archive_1h_ahead_outage_20210101_2026_0924.parquet`) was defined but never loaded, so `spare_capacity` had no outage term. Now inner-joins `totalResourceMW` on datetime (as `06.1`): `(total_load − renewable_gen) / (non_re_capacity − outage)`. Effect: 43,147 rows unchanged; mean `spare_capacity` 0.507 → 0.644; corr with `price_wo_adders` 0.177 → 0.227; 1,210 hours > 1 (see [[feature-engineering]] "Outage denominator mismatch").
 - **Last run: 2026-10-28 — PASS** (`nbconvert --execute --inplace`, 0 errors).
+
+### 05_rtcb_adder_model_data (`03_model`)   [model · developing]  (new, 2026-10-28)
+- **Purpose:** builds the RTC+B adder model dataset. **Targets:** all 6 post-RTC+B adders
+  (`RTRDPA`, `RTRDPRU`, `RTRDPRD`, `RTRDPRRS`, `RTRDPECRS`, `RTRDPNS`; see [[rtc-b-asdc]]).
+  **Predictors:** the non-price predictors of `01.1_model_data_v2` (`year`, `time_of_day`,
+  `peak_hour`, `season`, `total_load`, `perc_load`, outage-aware `spare_capacity`,
+  `ng_price_monthly`, `degree_days`, `heating_dd`). No power price or `price_wo_adders`.
+  Scope: 2025-12-05 HE1 (RTC+B go-live) onward.
+- **In:** `3_analysis/price_adders_analysis/post_202512/post_202512_price_adders_hourly_20251205_20261024.csv`
+  (base table; `date` renamed `datetime`), plus 01.1's predictor inputs with load →
+  `total_load_20201231_20261024.csv`, outage → `archive_1h_ahead_outage_20210101_2026_1028.parquet`,
+  temperature → `Texas_hourly_temp_2021_2025.csv` + `Texas_hourly_temp_20260101_20261021.csv`.
+  **Out:** `01_data/4_model/rtcb_adder_model_dataset_20251205_<end>.csv` (`<end>` = last row).
+- **Methods:** duckdb; predictors are LEFT-joined to the adders, missing counts printed, then
+  `dropna`. A coverage cell lists each input's last timestamp. `perc_load` is computed on the
+  full load series (calendar-year max), before the window filter.
+- **Result (2026-10-28):** 7,775 adder hours → **647** after `dropna` (2025-12-05 HE1 –
+  2025-12-31 HE23). Inputs ending at 2025-12-31: non-RE capacity (no 2026 row), `peak_hour`,
+  renewable gen; NG monthly ends 2026-02.
+- Predictor definitions carried over from 01.1 unchanged: `heating_dd` is TRUE when
+  `tx_temp > 65` and NULL at exactly 65; the `peak_hour` file's timestamps run 00:00–23:00,
+  while the other inputs run HE 01:00–24:00.
+- **Last run: 2026-10-28 — PASS** (`nbconvert --execute --inplace`).
 
 ---
 

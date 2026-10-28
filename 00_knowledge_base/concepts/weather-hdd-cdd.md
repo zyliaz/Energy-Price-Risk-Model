@@ -4,7 +4,7 @@ type: concept
 tags: [weather, demand-driver, ercot]
 status: developing
 sources: 4
-updated: 2026-07-24
+updated: 2026-10-28
 ---
 
 # Weather — HDD / CDD
@@ -33,10 +33,14 @@ weather → [[load-and-demand]] → reserves → [[ordc-price-adders]] → [[pri
     raw `.nc` files already downloaded for 2021–2025, so re-running the script/notebook
     with those files present does **not** re-hit the live API (existing-file skip check
     in the `.py`, but **not** in the notebook's cell 4 "test cell" — don't re-run that cell
-    blind). Raw/cleaned output is UTC as scraped (unchanged, per the human's request not to
-    touch the already-scraped pipeline) — the UTC→Central conversion happens in the
-    consuming notebooks instead, see below. See [[data-extraction-guide]] pitfall #15,
-    [[ercot-data-products]].
+    blind). See [[data-extraction-guide]] pitfall #15, [[ercot-data-products]].
+  - **Current state (verified 2026-10-28):** the cleaned ERA5 files are **CPT hour-ending**
+    (scraper rewritten 2026-07-29 as `era5_ercot_temp.py`; see [[extraction-scripts]]):
+    mean temp peaks at hour 16–17 and troughs at hour 8. The consuming notebooks
+    (`06_spare_capacity`, `01_regression_data`, `01.1_model_data_v2`) no longer convert.
+    Coverage: `Texas_hourly_temp_2021_2025.csv` + `Texas_hourly_temp_20260101_20261021.csv`;
+    RTC+B-window file `Texas_hourly_temp_20251205_20261021.csv` (7,703 h). Sep–Oct 2026 are
+    preliminary ERA5T. Details: [[notebook-catalog]] (`02_era5_ercot_temp`).
 
 > ✅ **CONTRADICTION / data-integrity bug, found and fixed 2026-07-24:** ERA5's raw
 > `Texas_hourly_temp_2021_2025.csv` `datetime` column is **UTC**, not the project's
@@ -57,6 +61,9 @@ weather → [[load-and-demand]] → reserves → [[ordc-price-adders]] → [[pri
 > **unchanged** — the raw/cleaned ERA5 files stay UTC as originally scraped; only the two
 > consuming notebooks apply the conversion. See [[sources/2026-07-20_meeting-notes]],
 > [[feature-engineering]].
+> **Superseded 2026-07-29:** the scraper rewrite moved the UTC→CPT conversion into the
+> pipeline, and the consumption-layer conversions were removed. The 2026-07-24 description above
+> is history only; the current state is in the ERA5 bullet above.
 
 ## Texas-specific insight
 - Texas households mostly **cool**, with little heating (transitioning to electric heat).

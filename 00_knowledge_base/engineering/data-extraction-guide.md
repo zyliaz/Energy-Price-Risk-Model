@@ -4,7 +4,7 @@ type: engineering
 tags: [data, extraction, api, methods, reference]
 status: stable
 sources: 1
-updated: 2026-09-24
+updated: 2026-10-28
 ---
 
 # Data Extraction Guide
@@ -132,6 +132,17 @@ iterations. Read before adding a **new data source**. Full detail:
     the yearly file has no posting date in its name (`RTMLZHBSPP_2026.xlsx`), so a re-download
     collides with the old copy (macOS saved it as `RTMLZHBSPP_2026 2.xlsx`) — name the file
     explicitly rather than globbing.
+20. **Not every scraper loads `.env`, and a pipe hides the failure.** `ercot_load_by_fzn.py`
+    reads `ERCOT_*` from the environment only (no `load_dotenv`), so run from a shell without
+    them it exits on "Required environment variable … not set". Piped into `tail`, the
+    command still reports exit 0 (found 2026-10-28). Load `.env` first, and check the output
+    file exists rather than trusting the exit code of a pipeline.
+21. **Close netCDF files before re-opening them in the same process.** In
+    `02_era5_ercot_temp`, cell 13 opened every 2026 `.nc` without closing, and the later splice
+    check re-opened the Jan file: the Jupyter kernel died with no Python traceback (found
+    2026-10-28). Open with `with xr.open_dataset(p) as ds:`. Separately, a gap check on CPT
+    hour-ending data must build its expected hours in `America/Chicago`, since the
+    spring-forward hour does not exist locally.
 
 ## Timeouts (non-member, empirical)
 Connect 10 s · read 60 s (live) / 180 s (archive list) / 240 s (archive download) · sleep
